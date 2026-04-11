@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the survey app.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "points": { "type": "number", "description": "Current points balance" },
+        "referralCode": { "type": "string", "description": "Unique referral code for this user" },
+        "referredBy": { "type": "string", "description": "UID of the user who referred this user (optional)" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "points", "referralCode", "createdAt"]
+    },
+    "SurveySubmission": {
+      "title": "SurveySubmission",
+      "description": "A record of a completed survey.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "surveyId": { "type": "string" },
+        "pointsEarned": { "type": "number" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "surveyId", "pointsEarned", "submittedAt"]
+    },
+    "Redemption": {
+      "title": "Redemption",
+      "description": "A record of a redeemed reward.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "rewardId": { "type": "string" },
+        "rewardTitle": { "type": "string" },
+        "cost": { "type": "number" },
+        "redeemedAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "completed", "failed"] }
+      },
+      "required": ["userId", "rewardId", "rewardTitle", "cost", "redeemedAt", "status"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "An in-app notification for a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["survey", "trivia", "redemption", "referral", "system"] }
+      },
+      "required": ["userId", "title", "message", "read", "createdAt", "type"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles."
+    },
+    "surveySubmissions/{submissionId}": {
+      "schema": { "$ref": "#/entities/SurveySubmission" },
+      "description": "Records of completed surveys."
+    },
+    "redemptions/{redemptionId}": {
+      "schema": { "$ref": "#/entities/Redemption" },
+      "description": "Records of redeemed rewards."
+    },
+    "notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "In-app notifications."
+    }
+  }
+}

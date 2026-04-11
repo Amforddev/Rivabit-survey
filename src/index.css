@@ -1,0 +1,47 @@
+@import url('https://api.fontshare.com/v2/css?f[]=clash-grotesk@200,300,400,500,600,700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Clash Grotesk", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-brand-dark: #1E242D;
+  --color-brand-blue: #8AB4F8;
+  --color-brand-light: #E8F0FE;
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .neo-brutalist {
+    @apply border-4 border-brand-dark shadow-[4px_4px_0px_0px_rgba(30,36,45,1)] rounded-xl;
+  }
+  
+  .neo-brutalist-sm {
+    @apply border-2 border-brand-dark shadow-[2px_2px_0px_0px_rgba(30,36,45,1)] rounded-lg;
+  }
+}
+
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientBG 10s ease infinite;
+}
+
+body {
+  font-family: "Clash Grotesk", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
