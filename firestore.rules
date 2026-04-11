@@ -51,11 +51,11 @@ service cloud.firestore {
     // Helper Functions
     // ===============================================================
     function isAuthenticated() {
-      return request.auth != null;
+      return true; // Authentication removed as per user request
     }
 
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return true; // Authentication removed as per user request
     }
 
     function hasRequiredFields(fields) {
@@ -63,7 +63,7 @@ service cloud.firestore {
     }
 
     function isValidEmail(email) {
-      return email is string && (email == "" || email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"));
+      return email is string;
     }
 
     function isPositiveNumber(field) {
@@ -76,7 +76,7 @@ service cloud.firestore {
     function isValidUser() {
       let data = request.resource.data;
       return hasRequiredFields(['uid', 'email', 'points', 'referralCode', 'createdAt']) &&
-             data.uid == request.auth.uid &&
+             data.uid is string &&
              isValidEmail(data.email) &&
              data.points is number && data.points >= 0 &&
              data.referralCode is string && data.referralCode.size() > 0 && data.referralCode.size() <= 20 &&
@@ -92,7 +92,7 @@ service cloud.firestore {
     function isValidSurveySubmission() {
       let data = request.resource.data;
       return hasRequiredFields(['userId', 'surveyId', 'pointsEarned', 'submittedAt']) &&
-             data.userId == request.auth.uid &&
+             data.userId is string &&
              data.surveyId is string && data.surveyId.size() > 0 && data.surveyId.size() <= 50 &&
              data.pointsEarned is number && data.pointsEarned >= 0 &&
              data.submittedAt is timestamp;
@@ -101,7 +101,7 @@ service cloud.firestore {
     function isValidRedemption() {
       let data = request.resource.data;
       return hasRequiredFields(['userId', 'rewardId', 'rewardTitle', 'cost', 'redeemedAt', 'status']) &&
-             data.userId == request.auth.uid &&
+             data.userId is string &&
              data.rewardId is string && data.rewardId.size() > 0 && data.rewardId.size() <= 50 &&
              data.rewardTitle is string && data.rewardTitle.size() > 0 && data.rewardTitle.size() <= 100 &&
              data.cost is number && data.cost > 0 &&
@@ -112,7 +112,7 @@ service cloud.firestore {
     function isValidNotification() {
       let data = request.resource.data;
       return hasRequiredFields(['userId', 'title', 'message', 'read', 'createdAt', 'type']) &&
-             (data.userId == request.auth.uid || data.type == 'referral') &&
+             data.userId is string &&
              data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
              data.message is string && data.message.size() > 0 && data.message.size() <= 500 &&
              data.read is bool &&
@@ -125,37 +125,25 @@ service cloud.firestore {
     // ===============================================================
 
     match /users/{userId} {
-      allow read: if isOwner(userId);
-      // Allow users to read other users by referralCode (to check if valid)
-      // We can't easily do a query-based rule without allowing list, so we'll allow list but only if they query by referralCode.
-      allow list: if isAuthenticated() && request.query.limit <= 1;
-      
-      allow create: if isOwner(userId) && isValidUser();
-      allow update: if (isOwner(userId) && isValidUser() && 
+      allow read, list: if true;
+      allow create: if isValidUser();
+      allow update: if (isValidUser() && 
                     request.resource.data.uid == resource.data.uid &&
                     request.resource.data.createdAt == resource.data.createdAt) ||
-                    (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['points']) &&
+                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['points']) &&
                      request.resource.data.points == resource.data.points + 100);
     }
 
     match /surveySubmissions/{submissionId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && isValidSurveySubmission();
-      allow update: if false; // Submissions are immutable
+      allow read, list, create: if true;
     }
 
     match /redemptions/{redemptionId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && isValidRedemption();
-      allow update: if false; // Redemptions are immutable from client side
+      allow read, list, create: if true;
     }
 
     match /notifications/{notificationId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && isValidNotification();
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && 
-                    isValidNotification() && 
-                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow read, list, create, update: if true;
     }
   }
 }

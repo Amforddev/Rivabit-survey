@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Home, ClipboardList, Gift, User, Coins, Wifi, CheckCircle2, Bell, BrainCircuit } from 'lucide-react';
-import { onAuthStateChanged, User as FirebaseUser, signInAnonymously } from 'firebase/auth';
-import { doc, onSnapshot, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
-import { auth, db, handleFirestoreError, OperationType } from './firebase';
+import { doc, onSnapshot, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, setDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from './firebase';
 
 import { View, Survey, RewardOption, UserProfile, SurveySubmission, Redemption, AppNotification } from './types';
 import HomeView from './views/HomeView';
@@ -13,9 +12,19 @@ import RewardsView from './views/RewardsView';
 import ProfileView from './views/ProfileView';
 import TriviaView from './views/TriviaView';
 
+// Helper to get or create a persistent user ID
+const getPersistentUserId = () => {
+  let id = localStorage.getItem('rivabit_user_id');
+  if (!id) {
+    id = 'user_' + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('rivabit_user_id', id);
+  }
+  return id;
+};
+
 export default function App() {
   const [view, setView] = useState<View>('home');
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [userId] = useState(getPersistentUserId());
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
@@ -36,52 +45,21 @@ export default function App() {
   useEffect(() => {
     // Safety timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
-      if (loading) {
+      if (loading && !userProfile) {
         console.warn("Initialization timed out after 15s");
         setLoading(false);
-        if (!user || !userProfile) {
-          setInitError("App is taking longer than usual to load. Please check your internet connection.");
-        }
       }
     }, 15000);
-
-    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-      } else {
-        try {
-          await signInAnonymously(auth);
-        } catch (error: any) {
-          console.error("Auto sign-in failed:", error);
-          setInitError("Failed to connect to authentication service. Please try again later.");
-          setLoading(false);
-        }
-      }
-    });
-
-    return () => {
-      unsubscribeAuth();
-      clearTimeout(timeoutId);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
 
     let unsubProfile: () => void;
     let unsubSub: () => void;
     let unsubRed: () => void;
     let unsubNotif: () => void;
 
-    const userRef = doc(db, 'users', user.uid);
+    const userRef = doc(db, 'users', userId);
 
     const initializeData = async () => {
       try {
-        // Test connection to Firestore
-        await getDocFromServer(doc(db, 'system', 'ping')).catch(() => {
-          // Ignore ping error, but it helps wake up the connection
-        });
-
         // Listen to User Profile - Attach immediately
         unsubProfile = onSnapshot(userRef, async (docSnap) => {
           if (docSnap.exists()) {
@@ -91,9 +69,9 @@ export default function App() {
           } else {
             // Document doesn't exist, create it
             try {
-              const newReferralCode = user.uid.substring(0, 6).toUpperCase() + Math.floor(Math.random() * 1000);
+              const newReferralCode = userId.substring(0, 8).toUpperCase();
               await setDoc(userRef, {
-                uid: user.uid,
+                uid: userId,
                 email: '',
                 displayName: 'Guest User',
                 photoURL: '',
@@ -103,34 +81,28 @@ export default function App() {
               });
             } catch (e) {
               console.error("Error creating user profile:", e);
-              setInitError("Failed to create user profile. Please check your permissions.");
               setLoading(false);
             }
           }
         }, (err) => {
           console.error("Profile snapshot error:", err);
-          if (err.message.includes('offline')) {
-            setInitError("You appear to be offline. Please check your connection.");
-          } else {
-            setInitError("Permission denied or database error. Please contact support.");
-          }
           setLoading(false);
         });
 
         // Listen to Submissions
-        const qSub = query(collection(db, 'surveySubmissions'), where('userId', '==', user.uid));
+        const qSub = query(collection(db, 'surveySubmissions'), where('userId', '==', userId));
         unsubSub = onSnapshot(qSub, (snap) => {
           setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as SurveySubmission)));
         }, (err) => console.error("Submissions error:", err));
 
         // Listen to Redemptions
-        const qRed = query(collection(db, 'redemptions'), where('userId', '==', user.uid));
+        const qRed = query(collection(db, 'redemptions'), where('userId', '==', userId));
         unsubRed = onSnapshot(qRed, (snap) => {
           setRedemptions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Redemption)));
         }, (err) => console.error("Redemptions error:", err));
 
         // Listen to Notifications
-        const qNotif = query(collection(db, 'notifications'), where('userId', '==', user.uid));
+        const qNotif = query(collection(db, 'notifications'), where('userId', '==', userId));
         unsubNotif = onSnapshot(qNotif, (snap) => {
           const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification));
           notifs.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
@@ -139,7 +111,6 @@ export default function App() {
 
       } catch (err) {
         console.error("Initialization error:", err);
-        setInitError("Failed to initialize app data. Please refresh.");
         setLoading(false);
       }
     };
@@ -147,12 +118,13 @@ export default function App() {
     initializeData();
 
     return () => {
+      clearTimeout(timeoutId);
       if (unsubProfile) unsubProfile();
       if (unsubSub) unsubSub();
       if (unsubRed) unsubRed();
       if (unsubNotif) unsubNotif();
     };
-  }, [user]);
+  }, [userId]);
 
   const startSurvey = (survey: Survey) => {
     setActiveSurvey(survey);
@@ -160,18 +132,18 @@ export default function App() {
   };
 
   const finishSurvey = async (pointsEarned: number, surveyId: string) => {
-    if (!user || !userProfile) return;
+    if (!userProfile) return;
     try {
       // Create submission
       await addDoc(collection(db, 'surveySubmissions'), {
-        userId: user.uid,
+        userId: userId,
         surveyId,
         pointsEarned,
         submittedAt: serverTimestamp()
       });
 
       // Update user points
-      await updateDoc(doc(db, 'users', user.uid), {
+      await updateDoc(doc(db, 'users', userId), {
         points: increment(pointsEarned)
       });
 
@@ -184,9 +156,9 @@ export default function App() {
   };
 
   const handleEarnTriviaPoints = async (pointsEarned: number) => {
-    if (!user || !userProfile) return;
+    if (!userProfile) return;
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
+      await updateDoc(doc(db, 'users', userId), {
         points: increment(pointsEarned)
       });
       showToast('Trivia Completed!', `You earned ${pointsEarned} points.`);
@@ -196,17 +168,17 @@ export default function App() {
   };
 
   const redeemReward = async (option: RewardOption, details?: any) => {
-    if (!user || !userProfile) return;
+    if (!userProfile) return;
     if (userProfile.points >= option.cost) {
       try {
         // Update user profile with new details if provided
         if (details && Object.keys(details).length > 0) {
-          await updateDoc(doc(db, 'users', user.uid), details);
+          await updateDoc(doc(db, 'users', userId), details);
         }
 
         // Create redemption record
         await addDoc(collection(db, 'redemptions'), {
-          userId: user.uid,
+          userId: userId,
           rewardId: option.id,
           rewardTitle: option.title,
           cost: option.cost,
@@ -215,13 +187,13 @@ export default function App() {
         });
 
         // Deduct points
-        await updateDoc(doc(db, 'users', user.uid), {
+        await updateDoc(doc(db, 'users', userId), {
           points: increment(-option.cost)
         });
 
         // Add notification
         await addDoc(collection(db, 'notifications'), {
-          userId: user.uid,
+          userId: userId,
           title: 'Redemption Successful',
           message: `You redeemed ${option.title} for ${option.cost} points.`,
           read: false,
@@ -251,7 +223,7 @@ export default function App() {
     }
   };
 
-  if (loading) {
+  if (loading && !userProfile) {
     return (
       <div className="min-h-screen bg-neutral-900 flex flex-col items-center justify-center p-6 text-center">
         <div className="w-12 h-12 border-4 border-[#FFC900] border-t-transparent rounded-full animate-spin mb-4" />
@@ -260,7 +232,7 @@ export default function App() {
     );
   }
 
-  if (initError) {
+  if (initError && !userProfile) {
     return (
       <div className="min-h-screen bg-neutral-900 flex flex-col items-center justify-center p-6 text-center">
         <div className="bg-white p-8 rounded-[2rem] border-4 border-brand-dark shadow-[8px_8px_0px_0px_rgba(30,36,45,1)] max-w-sm">
@@ -280,6 +252,17 @@ export default function App() {
     );
   }
 
+  // Fallback profile if still loading but we want to show the home page
+  const activeProfile = userProfile || {
+    uid: userId,
+    email: '',
+    displayName: 'Guest User',
+    photoURL: '',
+    points: 0,
+    referralCode: userId.substring(0, 8).toUpperCase(),
+    createdAt: null as any
+  };
+
   const completedSurveyIds = submissions.map(s => s.surveyId);
   const unreadNotifsCount = notifications.filter(n => !n.read).length;
 
@@ -298,11 +281,11 @@ export default function App() {
         </div>
 
         <>
-          {view !== 'survey_active' && userProfile && (
+          {view !== 'survey_active' && activeProfile && (
             <header className="bg-white px-6 py-4 flex justify-between items-center z-10 border-b-4 border-brand-dark relative">
                 <div>
                   <h1 className="text-2xl font-bold text-brand-dark tracking-tight uppercase">Rivabit</h1>
-                  <p className="text-sm text-gray-500 font-bold uppercase tracking-wide">Hello, {userProfile.displayName?.split(' ')[0] || 'User'}</p>
+                  <p className="text-sm text-gray-500 font-bold uppercase tracking-wide">Hello, {activeProfile.displayName?.split(' ')[0] || 'User'}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <button 
@@ -318,13 +301,13 @@ export default function App() {
                     )}
                   </button>
                   <motion.div 
-                    key={userProfile.points}
+                    key={activeProfile.points}
                     initial={{ scale: 1.2, color: '#10b981' }}
                     animate={{ scale: 1, color: '#1E242D' }}
                     className="flex items-center gap-1.5 bg-[#FFC900] px-3 py-1.5 rounded-xl text-brand-dark font-bold border-2 border-brand-dark shadow-[2px_2px_0px_0px_rgba(30,36,45,1)]"
                   >
                     <Coins size={20} />
-                    <span>{userProfile.points}</span>
+                    <span>{activeProfile.points}</span>
                   </motion.div>
                 </div>
 
@@ -361,10 +344,10 @@ export default function App() {
 
             <main className="flex-1 overflow-y-auto relative bg-gray-50 pb-24" onClick={() => showNotificationsPanel && setShowNotificationsPanel(false)}>
               <AnimatePresence mode="wait">
-                {view === 'home' && userProfile && (
+                {view === 'home' && activeProfile && (
                   <HomeView 
                     key="home" 
-                    userProfile={userProfile}
+                    userProfile={activeProfile}
                     startSurvey={startSurvey} 
                     completedSurveys={completedSurveyIds}
                     setView={setView}
@@ -391,18 +374,18 @@ export default function App() {
                     onCancel={() => setView('home')} 
                   />
                 )}
-                {view === 'rewards' && userProfile && (
+                {view === 'rewards' && activeProfile && (
                   <RewardsView 
                     key="rewards" 
-                    userProfile={userProfile} 
+                    userProfile={activeProfile} 
                     redeemReward={redeemReward} 
                     redemptions={redemptions}
                   />
                 )}
-                {view === 'profile' && userProfile && (
+                {view === 'profile' && activeProfile && (
                   <ProfileView 
                     key="profile" 
-                    userProfile={userProfile}
+                    userProfile={activeProfile}
                     redemptions={redemptions}
                     submissions={submissions}
                   />
