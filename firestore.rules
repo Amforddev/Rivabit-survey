@@ -63,7 +63,7 @@ service cloud.firestore {
     }
 
     function isValidEmail(email) {
-      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+      return email is string && (email == "" || email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"));
     }
 
     function isPositiveNumber(field) {
@@ -135,7 +135,7 @@ service cloud.firestore {
                     request.resource.data.uid == resource.data.uid &&
                     request.resource.data.createdAt == resource.data.createdAt) ||
                     (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['points']) &&
-                     request.resource.data.points == resource.data.points + 50);
+                     request.resource.data.points == resource.data.points + 100);
     }
 
     match /surveySubmissions/{submissionId} {

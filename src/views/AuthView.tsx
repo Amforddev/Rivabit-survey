@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { LogIn, Gift, UserPlus, CheckCircle2, AlertCircle, Play } from 'lucide-react';
 import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { signInAnonymously } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, updateDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, updateDoc, increment, limit } from 'firebase/firestore';
 
 interface AuthViewProps {
   onLoginSuccess: () => void;
@@ -43,7 +43,7 @@ export default function AuthView({ onLoginSuccess }: AuthViewProps) {
       if (referralCode.trim()) {
         // Find user with this referral code
         const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('referralCode', '==', referralCode.trim().toUpperCase()));
+        const q = query(usersRef, where('referralCode', '==', referralCode.trim().toUpperCase()), limit(1));
         const querySnapshot = await getDocs(q);
         
         if (!querySnapshot.empty) {
@@ -99,8 +99,13 @@ export default function AuthView({ onLoginSuccess }: AuthViewProps) {
       
       onLoginSuccess();
     } catch (err: any) {
-      handleFirestoreError(err, OperationType.CREATE, 'users');
-      setError(err.message || 'Failed to start');
+      try {
+        handleFirestoreError(err, OperationType.CREATE, 'users');
+      } catch (e: any) {
+        // handleFirestoreError throws, so we catch it here to update UI
+        console.error(e);
+      }
+      setError('Failed to start. Please check your connection or try again.');
     } finally {
       setLoading(false);
     }
