@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Home, ClipboardList, Gift, User, Coins, Wifi, CheckCircle2, Bell, BrainCircuit } from 'lucide-react';
 import { onAuthStateChanged, User as FirebaseUser, signInAnonymously } from 'firebase/auth';
-import { doc, onSnapshot, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, getDoc, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from './firebase';
 
 import { View, Survey, RewardOption, UserProfile, SurveySubmission, Redemption, AppNotification } from './types';
@@ -18,6 +18,7 @@ export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
   
   const [submissions, setSubmissions] = useState<SurveySubmission[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
@@ -33,18 +34,35 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Safety timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.warn("Initialization timed out after 15s");
+        setLoading(false);
+        if (!user || !userProfile) {
+          setInitError("App is taking longer than usual to load. Please check your internet connection.");
+        }
+      }
+    }, 15000);
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
       } else {
         try {
           await signInAnonymously(auth);
-        } catch (error) {
+        } catch (error: any) {
           console.error("Auto sign-in failed:", error);
+          setInitError("Failed to connect to authentication service. Please try again later.");
+          setLoading(false);
         }
       }
     });
-    return () => unsubscribeAuth();
+
+    return () => {
+      unsubscribeAuth();
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   useEffect(() => {
@@ -55,56 +73,78 @@ export default function App() {
     let unsubRed: () => void;
     let unsubNotif: () => void;
 
-    const initUserAndListen = async () => {
-      const userRef = doc(db, 'users', user.uid);
+    const userRef = doc(db, 'users', user.uid);
+
+    const initializeData = async () => {
       try {
-        const snap = await getDoc(userRef);
-        if (!snap.exists()) {
-          const newReferralCode = user.uid.substring(0, 6).toUpperCase() + Math.floor(Math.random() * 1000);
-          await setDoc(userRef, {
-            uid: user.uid,
-            email: '',
-            displayName: 'Guest User',
-            photoURL: '',
-            points: 0,
-            referralCode: newReferralCode,
-            createdAt: serverTimestamp(),
-          });
-        }
-      } catch (e) {
-        console.error("Error initializing user:", e);
-      }
+        // Test connection to Firestore
+        await getDocFromServer(doc(db, 'system', 'ping')).catch(() => {
+          // Ignore ping error, but it helps wake up the connection
+        });
 
-      unsubProfile = onSnapshot(userRef, (docSnap) => {
-        if (docSnap.exists()) {
-          setUserProfile(docSnap.data() as UserProfile);
-        }
+        // Listen to User Profile - Attach immediately
+        unsubProfile = onSnapshot(userRef, async (docSnap) => {
+          if (docSnap.exists()) {
+            setUserProfile(docSnap.data() as UserProfile);
+            setLoading(false);
+            setInitError(null);
+          } else {
+            // Document doesn't exist, create it
+            try {
+              const newReferralCode = user.uid.substring(0, 6).toUpperCase() + Math.floor(Math.random() * 1000);
+              await setDoc(userRef, {
+                uid: user.uid,
+                email: '',
+                displayName: 'Guest User',
+                photoURL: '',
+                points: 0,
+                referralCode: newReferralCode,
+                createdAt: serverTimestamp(),
+              });
+            } catch (e) {
+              console.error("Error creating user profile:", e);
+              setInitError("Failed to create user profile. Please check your permissions.");
+              setLoading(false);
+            }
+          }
+        }, (err) => {
+          console.error("Profile snapshot error:", err);
+          if (err.message.includes('offline')) {
+            setInitError("You appear to be offline. Please check your connection.");
+          } else {
+            setInitError("Permission denied or database error. Please contact support.");
+          }
+          setLoading(false);
+        });
+
+        // Listen to Submissions
+        const qSub = query(collection(db, 'surveySubmissions'), where('userId', '==', user.uid));
+        unsubSub = onSnapshot(qSub, (snap) => {
+          setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as SurveySubmission)));
+        }, (err) => console.error("Submissions error:", err));
+
+        // Listen to Redemptions
+        const qRed = query(collection(db, 'redemptions'), where('userId', '==', user.uid));
+        unsubRed = onSnapshot(qRed, (snap) => {
+          setRedemptions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Redemption)));
+        }, (err) => console.error("Redemptions error:", err));
+
+        // Listen to Notifications
+        const qNotif = query(collection(db, 'notifications'), where('userId', '==', user.uid));
+        unsubNotif = onSnapshot(qNotif, (snap) => {
+          const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification));
+          notifs.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+          setNotifications(notifs);
+        }, (err) => console.error("Notifications error:", err));
+
+      } catch (err) {
+        console.error("Initialization error:", err);
+        setInitError("Failed to initialize app data. Please refresh.");
         setLoading(false);
-      }, (err) => handleFirestoreError(err, OperationType.GET, 'users'));
-
-      // Listen to Submissions
-      const qSub = query(collection(db, 'surveySubmissions'), where('userId', '==', user.uid));
-      unsubSub = onSnapshot(qSub, (snap) => {
-        setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as SurveySubmission)));
-      }, (err) => handleFirestoreError(err, OperationType.LIST, 'surveySubmissions'));
-
-      // Listen to Redemptions
-      const qRed = query(collection(db, 'redemptions'), where('userId', '==', user.uid));
-      unsubRed = onSnapshot(qRed, (snap) => {
-        setRedemptions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Redemption)));
-      }, (err) => handleFirestoreError(err, OperationType.LIST, 'redemptions'));
-
-      // Listen to Notifications
-      const qNotif = query(collection(db, 'notifications'), where('userId', '==', user.uid));
-      unsubNotif = onSnapshot(qNotif, (snap) => {
-        const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification));
-        // Sort by date desc
-        notifs.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-        setNotifications(notifs);
-      }, (err) => handleFirestoreError(err, OperationType.LIST, 'notifications'));
+      }
     };
 
-    initUserAndListen();
+    initializeData();
 
     return () => {
       if (unsubProfile) unsubProfile();
@@ -212,7 +252,32 @@ export default function App() {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-neutral-900 flex items-center justify-center"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>;
+    return (
+      <div className="min-h-screen bg-neutral-900 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-12 h-12 border-4 border-[#FFC900] border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-white font-bold uppercase tracking-widest animate-pulse">Initializing Rivabit...</p>
+      </div>
+    );
+  }
+
+  if (initError) {
+    return (
+      <div className="min-h-screen bg-neutral-900 flex flex-col items-center justify-center p-6 text-center">
+        <div className="bg-white p-8 rounded-[2rem] border-4 border-brand-dark shadow-[8px_8px_0px_0px_rgba(30,36,45,1)] max-w-sm">
+          <div className="w-16 h-16 bg-[#FF90E8] rounded-2xl border-4 border-brand-dark flex items-center justify-center mx-auto mb-6 shadow-[4px_4px_0px_0px_rgba(30,36,45,1)]">
+            <Wifi size={32} className="text-brand-dark" />
+          </div>
+          <h2 className="text-2xl font-black text-brand-dark uppercase mb-4 leading-tight">Connection Issue</h2>
+          <p className="text-gray-600 font-bold mb-8">{initError}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full bg-[#FFC900] py-4 rounded-2xl border-4 border-brand-dark shadow-[4px_4px_0px_0px_rgba(30,36,45,1)] font-black uppercase text-brand-dark hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const completedSurveyIds = submissions.map(s => s.surveyId);
