@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Home, ClipboardList, Gift, User, Coins, Wifi, CheckCircle2, Bell, BrainCircuit } from 'lucide-react';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, getDocs } from 'firebase/firestore';
+import { onAuthStateChanged, User as FirebaseUser, signInAnonymously } from 'firebase/auth';
+import { doc, onSnapshot, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from './firebase';
 
 import { View, Survey, RewardOption, UserProfile, SurveySubmission, Redemption, AppNotification } from './types';
-import AuthView from './views/AuthView';
 import HomeView from './views/HomeView';
 import SurveysView from './views/SurveysView';
 import ActiveSurveyView from './views/ActiveSurveyView';
@@ -15,7 +14,7 @@ import ProfileView from './views/ProfileView';
 import TriviaView from './views/TriviaView';
 
 export default function App() {
-  const [view, setView] = useState<View>('auth');
+  const [view, setView] = useState<View>('home');
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,15 +33,15 @@ export default function App() {
   };
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (!currentUser) {
-        setView('auth');
-        setUserProfile(null);
-        setSubmissions([]);
-        setRedemptions([]);
-        setNotifications([]);
-        setLoading(false);
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        try {
+          await signInAnonymously(auth);
+        } catch (error) {
+          console.error("Auto sign-in failed:", error);
+        }
       }
     });
     return () => unsubscribeAuth();
@@ -51,41 +50,67 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
 
-    // Listen to User Profile
-    const unsubProfile = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
-      if (docSnap.exists()) {
-        setUserProfile(docSnap.data() as UserProfile);
-        if (view === 'auth') setView('home');
+    let unsubProfile: () => void;
+    let unsubSub: () => void;
+    let unsubRed: () => void;
+    let unsubNotif: () => void;
+
+    const initUserAndListen = async () => {
+      const userRef = doc(db, 'users', user.uid);
+      try {
+        const snap = await getDoc(userRef);
+        if (!snap.exists()) {
+          const newReferralCode = user.uid.substring(0, 6).toUpperCase() + Math.floor(Math.random() * 1000);
+          await setDoc(userRef, {
+            uid: user.uid,
+            email: '',
+            displayName: 'Guest User',
+            photoURL: '',
+            points: 0,
+            referralCode: newReferralCode,
+            createdAt: serverTimestamp(),
+          });
+        }
+      } catch (e) {
+        console.error("Error initializing user:", e);
       }
-      setLoading(false);
-    }, (err) => handleFirestoreError(err, OperationType.GET, 'users'));
 
-    // Listen to Submissions
-    const qSub = query(collection(db, 'surveySubmissions'), where('userId', '==', user.uid));
-    const unsubSub = onSnapshot(qSub, (snap) => {
-      setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as SurveySubmission)));
-    }, (err) => handleFirestoreError(err, OperationType.LIST, 'surveySubmissions'));
+      unsubProfile = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setUserProfile(docSnap.data() as UserProfile);
+        }
+        setLoading(false);
+      }, (err) => handleFirestoreError(err, OperationType.GET, 'users'));
 
-    // Listen to Redemptions
-    const qRed = query(collection(db, 'redemptions'), where('userId', '==', user.uid));
-    const unsubRed = onSnapshot(qRed, (snap) => {
-      setRedemptions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Redemption)));
-    }, (err) => handleFirestoreError(err, OperationType.LIST, 'redemptions'));
+      // Listen to Submissions
+      const qSub = query(collection(db, 'surveySubmissions'), where('userId', '==', user.uid));
+      unsubSub = onSnapshot(qSub, (snap) => {
+        setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as SurveySubmission)));
+      }, (err) => handleFirestoreError(err, OperationType.LIST, 'surveySubmissions'));
 
-    // Listen to Notifications
-    const qNotif = query(collection(db, 'notifications'), where('userId', '==', user.uid));
-    const unsubNotif = onSnapshot(qNotif, (snap) => {
-      const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification));
-      // Sort by date desc
-      notifs.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-      setNotifications(notifs);
-    }, (err) => handleFirestoreError(err, OperationType.LIST, 'notifications'));
+      // Listen to Redemptions
+      const qRed = query(collection(db, 'redemptions'), where('userId', '==', user.uid));
+      unsubRed = onSnapshot(qRed, (snap) => {
+        setRedemptions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Redemption)));
+      }, (err) => handleFirestoreError(err, OperationType.LIST, 'redemptions'));
+
+      // Listen to Notifications
+      const qNotif = query(collection(db, 'notifications'), where('userId', '==', user.uid));
+      unsubNotif = onSnapshot(qNotif, (snap) => {
+        const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification));
+        // Sort by date desc
+        notifs.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        setNotifications(notifs);
+      }, (err) => handleFirestoreError(err, OperationType.LIST, 'notifications'));
+    };
+
+    initUserAndListen();
 
     return () => {
-      unsubProfile();
-      unsubSub();
-      unsubRed();
-      unsubNotif();
+      if (unsubProfile) unsubProfile();
+      if (unsubSub) unsubSub();
+      if (unsubRed) unsubRed();
+      if (unsubNotif) unsubNotif();
     };
   }, [user]);
 
@@ -207,12 +232,9 @@ export default function App() {
           </div>
         </div>
 
-        {view === 'auth' ? (
-          <AuthView onLoginSuccess={() => setView('home')} />
-        ) : (
-          <>
-            {view !== 'survey_active' && userProfile && (
-              <header className="bg-white px-6 py-4 flex justify-between items-center z-10 border-b-4 border-brand-dark relative">
+        <>
+          {view !== 'survey_active' && userProfile && (
+            <header className="bg-white px-6 py-4 flex justify-between items-center z-10 border-b-4 border-brand-dark relative">
                 <div>
                   <h1 className="text-2xl font-bold text-brand-dark tracking-tight uppercase">Rivabit</h1>
                   <p className="text-sm text-gray-500 font-bold uppercase tracking-wide">Hello, {userProfile.displayName?.split(' ')[0] || 'User'}</p>
@@ -333,7 +355,6 @@ export default function App() {
               </nav>
             )}
           </>
-        )}
 
         <AnimatePresence>
           {toast && (
