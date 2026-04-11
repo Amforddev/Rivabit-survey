@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Coins, CheckCircle2 } from 'lucide-react';
+import { Coins, CheckCircle2, Ticket, AlertCircle } from 'lucide-react';
 import * as Icons from 'lucide-react';
-import { RewardOption, UserProfile } from '../types';
+import { RewardOption, UserProfile, Redemption } from '../types';
 import { REWARD_CATEGORIES } from '../data';
 
 interface RewardsViewProps {
   userProfile: UserProfile;
   redeemReward: (opt: RewardOption, details?: any) => void;
+  redemptions: Redemption[];
 }
 
-const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward }) => {
+const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, redemptions }) => {
   const [activeCategory, setActiveCategory] = useState<string>(REWARD_CATEGORIES[0].id);
   const [selectedOption, setSelectedOption] = useState<RewardOption | null>(null);
   
@@ -25,6 +26,7 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward }) 
 
   const handleConfirm = () => {
     if (!selectedOption) return;
+    if (userProfile.points < selectedOption.cost) return;
     
     const details: any = {};
     if (activeCategory === 'airtime' || activeCategory === 'data') {
@@ -96,12 +98,22 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward }) 
           >
             {category.options.map(option => {
               const canAfford = userProfile.points >= option.cost;
+              const tickets = activeCategory === 'raffle' 
+                ? redemptions.filter(r => r.rewardId === option.id).length 
+                : 0;
+
               return (
                 <div key={option.id} className="bg-white p-5 neo-brutalist flex flex-col gap-3">
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="font-bold text-brand-dark text-lg">{option.title}</h4>
                       <p className="text-sm text-gray-500 mt-1">{option.description}</p>
+                      {activeCategory === 'raffle' && tickets > 0 && (
+                        <div className="flex items-center gap-1 mt-2 text-sm font-bold text-brand-dark bg-[#FFC900] w-fit px-2 py-1 rounded-md border-2 border-brand-dark">
+                          <Ticket size={14} />
+                          <span>You have {tickets} ticket{tickets > 1 ? 's' : ''}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-1 text-brand-dark font-bold bg-brand-light px-2.5 py-1 rounded-lg border-2 border-brand-dark">
                       <Coins size={16} />
@@ -110,13 +122,9 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward }) 
                   </div>
                   <button
                     onClick={() => setSelectedOption(option)}
-                    className={`w-full py-3 rounded-xl font-bold text-sm transition-colors border-2 border-brand-dark ${
-                      canAfford 
-                        ? 'bg-brand-dark text-white hover:bg-gray-800 shadow-[2px_2px_0px_0px_rgba(30,36,45,1)] active:shadow-none active:translate-y-0.5 active:translate-x-0.5' 
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
-                    }`}
+                    className="w-full py-3 rounded-xl font-bold text-sm transition-colors border-2 border-brand-dark bg-brand-dark text-white hover:bg-gray-800 shadow-[2px_2px_0px_0px_rgba(30,36,45,1)] active:shadow-none active:translate-y-0.5 active:translate-x-0.5"
                   >
-                    {canAfford ? 'Redeem Now' : 'Not enough points'}
+                    Redeem Now
                   </button>
                 </div>
               );
@@ -164,6 +172,13 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward }) 
                     Spend <span className="font-bold text-brand-dark">{selectedOption.cost} points</span> on {selectedOption.title}?
                   </p>
                   
+                  {userProfile.points < selectedOption.cost && (
+                    <div className="bg-red-100 text-red-600 p-3 rounded-xl mb-4 flex items-start gap-2 text-sm font-bold border-2 border-red-600">
+                      <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                      <span>Not enough points. You need {selectedOption.cost - userProfile.points} more points.</span>
+                    </div>
+                  )}
+
                   {(activeCategory === 'airtime' || activeCategory === 'data') && (
                     <div className="mb-6 space-y-2">
                       <label className="text-sm font-bold text-brand-dark">Phone Number</label>
@@ -205,7 +220,8 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward }) 
                   <div className="space-y-3">
                     <button 
                       onClick={handleConfirm}
-                      className="w-full bg-brand-dark text-white py-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition-colors border-2 border-brand-dark shadow-[2px_2px_0px_0px_rgba(30,36,45,1)] active:shadow-none active:translate-y-0.5 active:translate-x-0.5"
+                      disabled={userProfile.points < selectedOption.cost}
+                      className="w-full bg-brand-dark text-white py-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition-colors border-2 border-brand-dark shadow-[2px_2px_0px_0px_rgba(30,36,45,1)] active:shadow-none active:translate-y-0.5 active:translate-x-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:translate-x-0 disabled:active:shadow-[2px_2px_0px_0px_rgba(30,36,45,1)]"
                     >
                       Confirm & Redeem
                     </button>

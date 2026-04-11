@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Home, ClipboardList, Gift, User, Coins, Wifi, CheckCircle2, Bell } from 'lucide-react';
+import { Home, ClipboardList, Gift, User, Coins, Wifi, CheckCircle2, Bell, BrainCircuit } from 'lucide-react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, getDocs } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from './firebase';
@@ -12,6 +12,7 @@ import SurveysView from './views/SurveysView';
 import ActiveSurveyView from './views/ActiveSurveyView';
 import RewardsView from './views/RewardsView';
 import ProfileView from './views/ProfileView';
+import TriviaView from './views/TriviaView';
 
 export default function App() {
   const [view, setView] = useState<View>('auth');
@@ -114,6 +115,18 @@ export default function App() {
       showToast('Survey Completed!', `You earned ${pointsEarned} points.`);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'surveySubmissions');
+    }
+  };
+
+  const handleEarnTriviaPoints = async (pointsEarned: number) => {
+    if (!user || !userProfile) return;
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        points: increment(pointsEarned)
+      });
+      showToast('Trivia Completed!', `You earned ${pointsEarned} points.`);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, 'users');
     }
   };
 
@@ -277,6 +290,12 @@ export default function App() {
                     completedSurveys={completedSurveyIds} 
                   />
                 )}
+                {view === 'trivia' && (
+                  <TriviaView 
+                    key="trivia" 
+                    onEarnPoints={handleEarnTriviaPoints}
+                  />
+                )}
                 {view === 'survey_active' && activeSurvey && (
                   <ActiveSurveyView 
                     key="survey_active" 
@@ -290,6 +309,7 @@ export default function App() {
                     key="rewards" 
                     userProfile={userProfile} 
                     redeemReward={redeemReward} 
+                    redemptions={redemptions}
                   />
                 )}
                 {view === 'profile' && userProfile && (
@@ -304,9 +324,10 @@ export default function App() {
             </main>
 
             {view !== 'survey_active' && (
-              <nav className="absolute bottom-0 w-full bg-white border-t-4 border-brand-dark px-6 py-4 pb-safe flex justify-between items-center z-20">
+              <nav className="absolute bottom-0 w-full bg-white border-t-4 border-brand-dark px-2 py-4 pb-safe flex justify-between items-center z-20">
                 <NavItem icon={Home} label="Home" isActive={view === 'home'} onClick={() => setView('home')} />
                 <NavItem icon={ClipboardList} label="Surveys" isActive={view === 'surveys'} onClick={() => setView('surveys')} />
+                <NavItem icon={BrainCircuit} label="Trivia" isActive={view === 'trivia'} onClick={() => setView('trivia')} />
                 <NavItem icon={Gift} label="Rewards" isActive={view === 'rewards'} onClick={() => setView('rewards')} />
                 <NavItem icon={User} label="Profile" isActive={view === 'profile'} onClick={() => setView('profile')} />
               </nav>
@@ -342,10 +363,10 @@ function NavItem({ icon: Icon, label, isActive, onClick }: { icon: React.Element
   return (
     <button 
       onClick={onClick}
-      className={`flex flex-col items-center justify-center w-16 gap-1 transition-colors ${isActive ? 'text-brand-blue' : 'text-gray-400 hover:text-brand-dark'}`}
+      className={`flex flex-col items-center justify-center w-14 gap-1 transition-colors ${isActive ? 'text-brand-blue' : 'text-gray-400 hover:text-brand-dark'}`}
     >
       <div className="relative">
-        <Icon size={28} strokeWidth={isActive ? 3 : 2} />
+        <Icon size={24} strokeWidth={isActive ? 3 : 2} />
         {isActive && (
           <motion.div 
             layoutId="nav-indicator"
@@ -353,7 +374,7 @@ function NavItem({ icon: Icon, label, isActive, onClick }: { icon: React.Element
           />
         )}
       </div>
-      <span className={`text-[10px] font-bold uppercase tracking-wide mt-1 ${isActive ? 'text-brand-blue' : ''}`}>{label}</span>
+      <span className={`text-[9px] font-bold uppercase tracking-wide mt-1 ${isActive ? 'text-brand-blue' : ''}`}>{label}</span>
     </button>
   );
 }

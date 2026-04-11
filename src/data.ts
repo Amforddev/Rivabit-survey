@@ -1,4 +1,4 @@
-import { Survey, RewardCategory } from './types';
+import { Survey, RewardCategory, TriviaQuestion } from './types';
 
 export const MOCK_SURVEYS: Survey[] = [
   {
@@ -33,6 +33,77 @@ export const MOCK_SURVEYS: Survey[] = [
     questions: [
       { id: 'q1', text: 'How do you usually commute?', options: ['Car', 'Public Transit', 'Bicycle', 'Walk', 'Work from home'] }
     ]
+  },
+  {
+    id: 's4',
+    title: 'Health & Fitness',
+    points: 250,
+    time: '4 min',
+    category: 'Health',
+    questions: [
+      { id: 'q1', text: 'How often do you exercise?', options: ['Daily', '3-4 times a week', '1-2 times a week', 'Rarely'] },
+      { id: 'q2', text: 'Do you track your calories?', options: ['Yes, strictly', 'Sometimes', 'No'] }
+    ]
+  },
+  {
+    id: 's5',
+    title: 'Entertainment Choices',
+    points: 120,
+    time: '3 min',
+    category: 'Entertainment',
+    questions: [
+      { id: 'q1', text: 'What is your favorite streaming service?', options: ['Netflix', 'Hulu', 'Disney+', 'Other'] },
+      { id: 'q2', text: 'How often do you go to the cinema?', options: ['Weekly', 'Monthly', 'Rarely', 'Never'] }
+    ]
+  },
+  {
+    id: 's6',
+    title: 'Food & Dining',
+    points: 180,
+    time: '4 min',
+    category: 'Food',
+    questions: [
+      { id: 'q1', text: 'How often do you eat out or order delivery?', options: ['Every day', '2-3 times a week', 'Once a week', 'Rarely'] },
+      { id: 'q2', text: 'What is your favorite cuisine?', options: ['Local', 'Italian', 'Chinese', 'Mexican', 'Other'] }
+    ]
+  }
+];
+
+export const MOCK_TRIVIA: TriviaQuestion[] = [
+  {
+    id: 't1',
+    question: 'What is the capital of Nigeria?',
+    options: ['Lagos', 'Abuja', 'Kano', 'Port Harcourt'],
+    correctAnswerIndex: 1,
+    points: 10
+  },
+  {
+    id: 't2',
+    question: 'Which planet is known as the Red Planet?',
+    options: ['Venus', 'Jupiter', 'Mars', 'Saturn'],
+    correctAnswerIndex: 2,
+    points: 10
+  },
+  {
+    id: 't3',
+    question: 'What is the largest ocean on Earth?',
+    options: ['Atlantic Ocean', 'Indian Ocean', 'Arctic Ocean', 'Pacific Ocean'],
+    correctAnswerIndex: 3,
+    points: 10
+  },
+  {
+    id: 't4',
+    question: 'Who wrote "Things Fall Apart"?',
+    options: ['Wole Soyinka', 'Chinua Achebe', 'Chimamanda Ngozi Adichie', 'Buchi Emecheta'],
+    correctAnswerIndex: 1,
+    points: 15
+  },
+  {
+    id: 't5',
+    question: 'What is the chemical symbol for Gold?',
+    options: ['Ag', 'Au', 'Fe', 'Cu'],
+    correctAnswerIndex: 1,
+    points: 15
   }
 ];
 

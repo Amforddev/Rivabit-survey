@@ -1,4 +1,4 @@
-export type View = 'home' | 'surveys' | 'survey_active' | 'rewards' | 'profile' | 'auth';
+export type View = 'home' | 'surveys' | 'survey_active' | 'rewards' | 'profile' | 'auth' | 'trivia';
 
 export interface Survey {
   id: string;
@@ -13,6 +13,14 @@ export interface Question {
   id: string;
   text: string;
   options: string[];
+}
+
+export interface TriviaQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswerIndex: number;
+  points: number;
 }
 
 export interface RewardCategory {

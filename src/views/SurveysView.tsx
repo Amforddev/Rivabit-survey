@@ -1,6 +1,6 @@
-import React from 'react';
-import { motion } from 'motion/react';
-import { CheckCircle2, ClipboardList, Coins, Clock } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { CheckCircle2, ClipboardList, Coins, Clock, Filter, ChevronDown } from 'lucide-react';
 import { Survey } from '../types';
 import { MOCK_SURVEYS } from '../data';
 
@@ -10,8 +10,16 @@ interface SurveysViewProps {
 }
 
 const SurveysView: React.FC<SurveysViewProps> = ({ completedSurveys, startSurvey }) => {
-  const availableSurveys = MOCK_SURVEYS.filter(s => !completedSurveys.includes(s.id));
-  const doneSurveys = MOCK_SURVEYS.filter(s => completedSurveys.includes(s.id));
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const categories = useMemo(() => {
+    const cats = new Set(MOCK_SURVEYS.map(s => s.category));
+    return ['All', ...Array.from(cats)];
+  }, []);
+
+  const availableSurveys = MOCK_SURVEYS.filter(s => !completedSurveys.includes(s.id) && (selectedCategory === 'All' || s.category === selectedCategory));
+  const doneSurveys = MOCK_SURVEYS.filter(s => completedSurveys.includes(s.id) && (selectedCategory === 'All' || s.category === selectedCategory));
 
   return (
     <motion.div 
@@ -20,9 +28,49 @@ const SurveysView: React.FC<SurveysViewProps> = ({ completedSurveys, startSurvey
       exit={{ opacity: 0, x: 20 }}
       className="p-6 space-y-6"
     >
-      <h2 className="text-3xl font-bold text-brand-dark uppercase tracking-wide">Available Surveys</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-bold text-brand-dark uppercase tracking-wide">Available Surveys</h2>
+      </div>
+
+      {/* Custom Filter Dropdown */}
+      <div className="relative z-30">
+        <button
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-white border-2 border-brand-dark rounded-xl font-bold text-brand-dark shadow-[2px_2px_0px_0px_rgba(30,36,45,1)] active:shadow-none active:translate-y-0.5 active:translate-x-0.5 transition-all"
+        >
+          <div className="flex items-center gap-2">
+            <Filter size={18} />
+            {selectedCategory}
+          </div>
+          <ChevronDown size={18} className={`transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+        </button>
+        
+        <AnimatePresence>
+          {isDropdownOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-brand-dark rounded-xl shadow-[4px_4px_0px_0px_rgba(30,36,45,1)] overflow-hidden"
+            >
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setSelectedCategory(cat);
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 font-bold text-brand-dark hover:bg-[#E8F0FE] transition-colors border-b-2 border-brand-dark last:border-b-0 ${selectedCategory === cat ? 'bg-[#E8F0FE]' : ''}`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
       
-      <div className="space-y-4">
+      <div className="space-y-4 relative z-10">
         {availableSurveys.length > 0 ? (
           availableSurveys.map(survey => (
             <SurveyCard key={survey.id} survey={survey} onClick={() => startSurvey(survey)} />
@@ -35,7 +83,7 @@ const SurveysView: React.FC<SurveysViewProps> = ({ completedSurveys, startSurvey
       </div>
 
       {doneSurveys.length > 0 && (
-        <div className="pt-8">
+        <div className="pt-8 relative z-10">
           <h3 className="text-xl font-bold text-gray-400 mb-4 uppercase tracking-wide">Completed</h3>
           <div className="space-y-4 opacity-70">
             {doneSurveys.map(survey => (
