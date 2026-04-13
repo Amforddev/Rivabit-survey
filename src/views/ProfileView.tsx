@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Coins, Trophy, ChevronRight, LogOut, Copy, CheckCircle2, History, Gift } from 'lucide-react';
+import { User, Coins, Trophy, ChevronRight, LogOut, Copy, CheckCircle2, History, Gift, Edit2 } from 'lucide-react';
 import { UserProfile, Redemption, SurveySubmission } from '../types';
 import { logOut } from '../firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface ProfileViewProps {
   userProfile: UserProfile;
@@ -13,6 +15,21 @@ interface ProfileViewProps {
 const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, submissions }) => {
   const [copied, setCopied] = useState(false);
   const [showHistory, setShowHistory] = useState<'none' | 'surveys' | 'redemptions'>('none');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState(userProfile.displayName || '');
+
+  const handleSaveName = async () => {
+    if (editName.trim() && editName !== userProfile.displayName) {
+      try {
+        await updateDoc(doc(db, 'users', userProfile.uid), {
+          displayName: editName.trim()
+        });
+      } catch (e) {
+        console.error("Failed to update name", e);
+      }
+    }
+    setIsEditingName(false);
+  };
 
   const copyReferral = () => {
     navigator.clipboard.writeText(userProfile.referralCode);
@@ -32,41 +49,41 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
         exit={{ opacity: 0, x: -20 }}
         className="h-full flex flex-col bg-gray-50"
       >
-        <div className="bg-white px-6 py-4 flex items-center gap-4 border-b-4 border-brand-dark shadow-sm z-10">
-          <button onClick={() => setShowHistory('none')} className="p-2 -ml-2 text-brand-dark hover:bg-gray-100 rounded-full transition-colors">
+        <div className="bg-white px-6 py-4 flex items-center gap-4 border-b border-gray-100 shadow-sm z-10">
+          <button onClick={() => setShowHistory('none')} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
             <ChevronRight size={24} className="rotate-180" />
           </button>
-          <h2 className="text-xl font-bold text-brand-dark uppercase tracking-wide">
+          <h2 className="text-lg font-semibold text-gray-900">
             {showHistory === 'surveys' ? 'Survey History' : 'Redemption History'}
           </h2>
         </div>
-        <div className="flex-1 p-6 overflow-y-auto space-y-4">
+        <div className="flex-1 p-6 overflow-y-auto space-y-3">
           {showHistory === 'surveys' && (
             submissions.length > 0 ? submissions.map(sub => (
-              <div key={sub.id} className="bg-white p-5 rounded-2xl neo-brutalist flex justify-between items-center">
+              <div key={sub.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
                 <div>
-                  <h4 className="font-bold text-brand-dark text-lg">Survey Completed</h4>
-                  <p className="text-sm text-gray-500 mt-1 font-bold uppercase tracking-wide">{new Date(sub.submittedAt?.toDate() || Date.now()).toLocaleDateString()}</p>
+                  <h4 className="font-medium text-gray-900 text-base">Survey Completed</h4>
+                  <p className="text-xs text-gray-500 mt-1">{new Date(sub.submittedAt?.toDate() || Date.now()).toLocaleDateString()}</p>
                 </div>
-                <div className="flex items-center gap-1 text-brand-dark font-bold bg-[#FFC900] px-3 py-1.5 rounded-lg border-2 border-brand-dark">
-                  +{sub.pointsEarned} pts
+                <div className="flex items-center gap-1 text-[#1F2937] font-semibold bg-gray-100 px-3 py-1.5 rounded-full text-sm">
+                  +{sub.bitsEarned} Bits
                 </div>
               </div>
-            )) : <p className="text-gray-500 text-center py-8 font-bold text-lg">No surveys completed yet.</p>
+            )) : <p className="text-gray-500 text-center py-8 text-sm">No surveys completed yet.</p>
           )}
 
           {showHistory === 'redemptions' && (
             redemptions.length > 0 ? redemptions.map(red => (
-              <div key={red.id} className="bg-white p-5 rounded-2xl neo-brutalist flex justify-between items-center">
+              <div key={red.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
                 <div>
-                  <h4 className="font-bold text-brand-dark text-lg">{red.rewardTitle}</h4>
-                  <p className="text-sm text-gray-500 mt-1 font-bold uppercase tracking-wide">{new Date(red.redeemedAt?.toDate() || Date.now()).toLocaleDateString()} • {red.status}</p>
+                  <h4 className="font-medium text-gray-900 text-base">{red.rewardTitle}</h4>
+                  <p className="text-xs text-gray-500 mt-1">{new Date(red.redeemedAt?.toDate() || Date.now()).toLocaleDateString()} • {red.status}</p>
                 </div>
-                <div className="flex items-center gap-1 text-brand-dark font-bold bg-[#FF90E8] px-3 py-1.5 rounded-lg border-2 border-brand-dark">
-                  -{red.cost} pts
+                <div className="flex items-center gap-1 text-gray-700 font-semibold bg-gray-100 px-3 py-1.5 rounded-full text-sm">
+                  -{red.cost} Bits
                 </div>
               </div>
-            )) : <p className="text-gray-500 text-center py-8 font-bold text-lg">No redemptions yet.</p>
+            )) : <p className="text-gray-500 text-center py-8 text-sm">No redemptions yet.</p>
           )}
         </div>
       </motion.div>
@@ -80,81 +97,156 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
       exit={{ opacity: 0, x: 20 }}
       className="p-6 space-y-6"
     >
-      <div className="flex flex-col items-center pt-8 pb-4">
-        <div className="w-28 h-28 bg-[#FFC900] rounded-full p-1 mb-4 border-4 border-brand-dark shadow-[4px_4px_0px_0px_rgba(30,36,45,1)]">
-          <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden border-2 border-brand-dark">
+      <div className="flex flex-col items-center pt-4 pb-2">
+        <div className="w-24 h-24 bg-gray-100 rounded-full p-1 mb-3">
+          <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden">
             {userProfile.photoURL ? (
               <img src={userProfile.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             ) : (
-              <User size={48} className="text-gray-300" />
+              <User size={40} className="text-gray-400" />
             )}
           </div>
         </div>
-        <h2 className="text-3xl font-bold text-brand-dark">{userProfile.displayName || 'User'}</h2>
-        <p className="text-gray-500 font-bold">{userProfile.email}</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-5 rounded-2xl neo-brutalist flex flex-col items-center">
-          <Coins className="text-[#FFC900] mb-2" size={32} />
-          <span className="text-3xl font-bold text-brand-dark">{userProfile.points}</span>
-          <span className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Total Points</span>
-        </div>
-        <div className="bg-white p-5 rounded-2xl neo-brutalist flex flex-col items-center">
-          <Trophy className="text-[#23A094] mb-2" size={32} />
-          <span className="text-3xl font-bold text-brand-dark">{submissions.length}</span>
-          <span className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Surveys Done</span>
-        </div>
-      </div>
-
-      {/* Referral Section */}
-      <div className="bg-[#23A094] rounded-2xl p-6 text-white neo-brutalist relative overflow-hidden">
-        <div className="absolute -right-4 -top-4 opacity-20">
-          <Gift size={120} />
-        </div>
-        <h3 className="font-bold text-2xl mb-1 relative z-10 text-brand-dark uppercase tracking-wide">Refer a Friend</h3>
-        <p className="text-brand-dark font-bold text-sm mb-4 relative z-10">Get 50 points when they sign up!</p>
-        <div className="flex items-center gap-2 relative z-10">
-          <div className="bg-white text-brand-dark px-4 py-3 rounded-xl font-mono font-bold tracking-wider flex-1 text-center border-2 border-brand-dark">
-            {userProfile.referralCode}
+        
+        {isEditingName ? (
+          <div className="flex items-center gap-2 mb-1">
+            <input 
+              type="text" 
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-1 text-center font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1F2937]"
+              autoFocus
+              onBlur={handleSaveName}
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+            />
           </div>
+        ) : (
+          <div className="flex items-center gap-2 mb-1 cursor-pointer group" onClick={() => setIsEditingName(true)}>
+            <h2 className="text-2xl font-semibold text-gray-900">{userProfile.displayName || 'User'}</h2>
+            <Edit2 size={16} className="text-gray-400 group-hover:text-[#1F2937] transition-colors" />
+          </div>
+        )}
+        
+        <p className="text-gray-500 text-sm">{userProfile.email || 'Guest User'}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
+          <Coins className="text-[#1F2937] mb-1" size={24} />
+          <span className="text-2xl font-semibold text-gray-900">{userProfile.bits}</span>
+          <span className="text-xs text-gray-500 mt-1">Total Bits</span>
+        </div>
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
+          <Trophy className="text-[#1F2937] mb-1" size={24} />
+          <span className="text-2xl font-semibold text-gray-900">{submissions.length}</span>
+          <span className="text-xs text-gray-500 mt-1">Surveys Done</span>
+        </div>
+      </div>
+
+      {/* Referral Section matching the image */}
+      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+        <h3 className="font-semibold text-xl text-gray-900 mb-1">We value friendship</h3>
+        <p className="text-gray-500 text-sm mb-6">Follow the steps below and get rewarded</p>
+        
+        <div className="space-y-6 relative before:absolute before:inset-0 before:ml-[15px] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gray-200 mb-6">
+          <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-200 bg-white text-gray-500 text-sm font-medium shrink-0 z-10">
+              1
+            </div>
+            <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] p-2">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-900 font-medium text-sm">Share your link</span>
+                <Copy size={14} className="text-[#1F2937]" />
+              </div>
+            </div>
+          </div>
+          <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-200 bg-white text-gray-500 text-sm font-medium shrink-0 z-10">
+              2
+            </div>
+            <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] p-2">
+              <span className="text-gray-900 font-medium text-sm">Your friend signs up using your link</span>
+            </div>
+          </div>
+          <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-200 bg-white text-gray-500 text-sm font-medium shrink-0 z-10">
+              3
+            </div>
+            <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] p-2">
+              <span className="text-gray-900 font-medium text-sm">Your friend places an order</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gray-50 rounded-2xl p-4 mb-4">
+          <div className="flex items-start gap-3 mb-3">
+            <div className="mt-0.5"><Coins size={16} className="text-gray-600" /></div>
+            <div>
+              <p className="text-xs text-gray-500">You get</p>
+              <p className="text-sm font-medium text-gray-900">500 Bits</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5"><Gift size={16} className="text-gray-600" /></div>
+            <div>
+              <p className="text-xs text-gray-500">They get</p>
+              <p className="text-sm font-medium text-gray-900">200 Bits</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="text-center mb-4">
+          <p className="text-xs text-gray-500 mb-1">Refer 5 friends and get extra rewards</p>
+          <div className="flex items-center justify-center gap-1 text-sm font-medium text-gray-900">
+            <Gift size={14} /> Free shipping
+          </div>
+        </div>
+
+        <div className="relative flex items-center">
+          <input 
+            type="text" 
+            readOnly 
+            value={`https://rivabit.com/ref/${userProfile.referralCode}`}
+            className="w-full bg-white border border-[#1F2937] rounded-xl py-3 pl-4 pr-24 text-sm text-gray-600 focus:outline-none"
+          />
           <button 
             onClick={copyReferral}
-            className="bg-brand-dark text-white p-3 rounded-xl hover:bg-gray-800 transition-colors border-2 border-brand-dark shadow-[2px_2px_0px_0px_rgba(30,36,45,1)] active:shadow-none active:translate-y-0.5 active:translate-x-0.5"
+            className="absolute right-0 top-0 bottom-0 bg-[#1F2937] text-white px-6 rounded-xl flex items-center gap-2 hover:bg-gray-900 transition-colors"
           >
-            {copied ? <CheckCircle2 size={24} /> : <Copy size={24} />}
+            {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+            <span className="text-sm font-medium">copy</span>
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl neo-brutalist overflow-hidden mt-6 flex flex-col">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-6 flex flex-col">
         <button 
           onClick={() => setShowHistory('surveys')}
-          className="w-full flex items-center justify-between p-5 border-b-2 border-brand-dark hover:bg-[#E8F0FE] transition-colors"
+          className="w-full flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <History size={24} className="text-brand-dark" />
-            <span className="font-bold text-brand-dark text-lg uppercase tracking-wide">Survey History</span>
+            <History size={20} className="text-gray-600" />
+            <span className="font-medium text-gray-900 text-base">Survey History</span>
           </div>
-          <ChevronRight size={24} className="text-brand-dark" />
+          <ChevronRight size={20} className="text-gray-400" />
         </button>
         <button 
           onClick={() => setShowHistory('redemptions')}
-          className="w-full flex items-center justify-between p-5 border-b-2 border-brand-dark hover:bg-[#E8F0FE] transition-colors"
+          className="w-full flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <Gift size={24} className="text-brand-dark" />
-            <span className="font-bold text-brand-dark text-lg uppercase tracking-wide">Redemption History</span>
+            <Gift size={20} className="text-gray-600" />
+            <span className="font-medium text-gray-900 text-base">Redemption History</span>
           </div>
-          <ChevronRight size={24} className="text-brand-dark" />
+          <ChevronRight size={20} className="text-gray-400" />
         </button>
         <button 
           onClick={handleLogout}
-          className="w-full flex items-center justify-between p-5 hover:bg-[#FF90E8] transition-colors group"
+          className="w-full flex items-center justify-between p-4 hover:bg-red-50 transition-colors group"
         >
           <div className="flex items-center gap-3">
-            <LogOut size={24} className="text-brand-dark" />
-            <span className="font-bold text-brand-dark text-lg uppercase tracking-wide">Log Out</span>
+            <LogOut size={20} className="text-red-500" />
+            <span className="font-medium text-red-500 text-base">Log Out</span>
           </div>
         </button>
       </div>

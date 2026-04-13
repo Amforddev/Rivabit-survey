@@ -23,36 +23,31 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
       className="p-6 space-y-8"
     >
       {/* Hero Card */}
-      <div className="bg-gradient-to-br from-brand-blue via-[#FF90E8] to-[#FFC900] animate-gradient rounded-2xl p-6 text-brand-dark neo-brutalist relative overflow-hidden">
-        <h2 className="font-bold mb-1 text-lg">Welcome back, {userProfile.displayName?.split(' ')[0] || 'User'}!</h2>
-        <div className="text-4xl font-bold mb-6 flex items-center gap-2 leading-tight">
-          <Zap className="text-white fill-white" size={36} />
-          Ready <br/> to earn?
+      <div className="bg-[#1F2937] rounded-3xl p-6 text-white shadow-md relative overflow-hidden">
+        <h2 className="font-medium mb-1 text-gray-200">Welcome back, {userProfile.displayName?.split(' ')[0] || 'User'}!</h2>
+        <div className="text-2xl font-semibold mb-4 flex items-center gap-2 leading-tight">
+          <Zap className="text-white fill-white opacity-80" size={24} />
+          Ready to earn?
         </div>
         <button 
           onClick={() => setView('surveys')}
-          className="bg-white text-brand-dark px-6 py-3 rounded-xl font-bold text-sm border-2 border-brand-dark shadow-[2px_2px_0px_0px_rgba(30,36,45,1)] active:shadow-none active:translate-y-0.5 active:translate-x-0.5 transition-all"
+          className="bg-white text-gray-900 px-5 py-2.5 rounded-xl font-medium text-sm shadow-sm hover:bg-gray-50 transition-colors"
         >
-          View Surveys
+          Answer Now
         </button>
       </div>
 
       {/* Featured Surveys */}
       <section>
-        <div className="flex justify-between items-end mb-4">
-          <h3 className="text-xl font-bold text-brand-dark uppercase tracking-wide">Featured Surveys</h3>
-          <button onClick={() => setView('surveys')} className="text-sm font-bold text-brand-blue uppercase tracking-wide">See All</button>
-        </div>
-        
-        <div className="space-y-4">
+        <div className="space-y-3">
           {availableSurveys.length > 0 ? (
             availableSurveys.slice(0, 2).map(survey => (
               <SurveyCard key={survey.id} survey={survey} onClick={() => startSurvey(survey)} />
             ))
           ) : (
-            <div className="bg-white p-6 rounded-2xl text-center neo-brutalist">
-              <CheckCircle2 className="mx-auto text-[#23A094] mb-2" size={40} />
-              <p className="text-brand-dark font-bold text-lg">You're all caught up!</p>
+            <div className="bg-white p-6 rounded-2xl text-center shadow-sm border border-gray-100">
+              <CheckCircle2 className="mx-auto text-[#1F2937] mb-2" size={40} />
+              <p className="text-gray-900 font-medium text-lg">You're all caught up!</p>
             </div>
           )}
         </div>
@@ -60,8 +55,8 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
 
       {/* Quick Rewards */}
       <section>
-        <h3 className="text-xl font-bold text-brand-dark mb-4 uppercase tracking-wide">Quick Rewards</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Rewards</h3>
+        <div className="grid grid-cols-2 gap-3">
           {REWARD_CATEGORIES.slice(0, 4).map(cat => {
             // Dynamically get icon component
             const Icon = (Icons as any)[cat.iconName];
@@ -69,12 +64,12 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
               <div 
                 key={cat.id} 
                 onClick={() => setView('rewards')}
-                className="bg-white p-5 rounded-2xl neo-brutalist flex flex-col items-center justify-center gap-3 cursor-pointer active:shadow-none active:translate-y-1 active:translate-x-1 transition-all"
+                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
               >
-                <div className={`w-14 h-14 rounded-full ${cat.color} text-brand-dark flex items-center justify-center border-2 border-brand-dark shadow-[2px_2px_0px_0px_rgba(30,36,45,1)]`}>
-                  {Icon && <Icon size={28} />}
+                <div className={`w-12 h-12 rounded-full bg-gray-100 text-[#1F2937] flex items-center justify-center`}>
+                  {Icon && <Icon size={24} />}
                 </div>
-                <span className="font-bold text-brand-dark text-base uppercase tracking-wide">{cat.title}</span>
+                <span className="font-medium text-gray-900 text-sm">{cat.title}</span>
               </div>
             );
           })}
@@ -89,27 +84,27 @@ export default HomeView;
 const SurveyCard: React.FC<{ survey: Survey, onClick: () => void }> = ({ survey, onClick }) => {
   return (
     <motion.div 
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
       onClick={onClick}
-      className="bg-white p-5 rounded-2xl neo-brutalist cursor-pointer flex gap-4 items-center active:shadow-none active:translate-y-1 active:translate-x-1 transition-all"
+      className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer flex gap-4 items-center transition-colors hover:bg-gray-50"
     >
-      <div className="w-16 h-16 bg-[#E8F0FE] border-2 border-brand-dark shadow-[2px_2px_0px_0px_rgba(30,36,45,1)] rounded-xl flex items-center justify-center text-brand-dark shrink-0">
-        <ClipboardList size={32} />
+      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-[#1F2937] shrink-0">
+        <ClipboardList size={24} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-start mb-2">
-          <h4 className="font-bold text-brand-dark text-lg truncate pr-2">{survey.title}</h4>
-          <div className="flex items-center gap-1 text-brand-dark font-bold text-sm shrink-0 bg-[#FFC900] px-2.5 py-1 rounded-md border-2 border-brand-dark">
-            <Coins size={14} />
-            {survey.points}
-          </div>
+        <div className="flex justify-between items-start mb-1">
+          <h4 className="font-medium text-gray-900 text-base truncate pr-2">{survey.title}</h4>
         </div>
-        <div className="flex items-center gap-3 text-sm text-gray-600 font-bold uppercase tracking-wide">
-          <span className="flex items-center gap-1"><Clock size={14} /> {survey.time}</span>
-          <span className="w-1.5 h-1.5 bg-brand-dark rounded-full"></span>
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <span className="flex items-center gap-1"><Clock size={12} /> {survey.time}</span>
+          <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
           <span>{survey.category}</span>
         </div>
+      </div>
+      <div className="flex items-center gap-1 text-[#1F2937] font-semibold text-sm shrink-0 bg-gray-100 px-3 py-1.5 rounded-full">
+        <Coins size={14} />
+        {survey.bits}
       </div>
     </motion.div>
   );

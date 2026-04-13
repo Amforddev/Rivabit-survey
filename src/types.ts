@@ -1,9 +1,9 @@
-export type View = 'home' | 'surveys' | 'survey_active' | 'rewards' | 'profile' | 'trivia';
+export type View = 'onboarding' | 'profile-builder' | 'home' | 'surveys' | 'survey_active' | 'rewards' | 'profile' | 'wallet';
 
 export interface Survey {
   id: string;
   title: string;
-  points: number;
+  bits: number;
   time: string;
   category: string;
   questions: Question[];
@@ -15,19 +15,10 @@ export interface Question {
   options: string[];
 }
 
-export interface TriviaQuestion {
-  id: string;
-  question: string;
-  options: string[];
-  correctAnswerIndex: number;
-  points: number;
-}
-
 export interface RewardCategory {
   id: string;
   title: string;
   iconName: string;
-  color: string;
   options: RewardOption[];
 }
 
@@ -43,20 +34,22 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   photoURL?: string;
-  points: number;
+  bits: number;
+  walletBalance: number;
   referralCode: string;
   referredBy?: string;
   createdAt: any;
   phoneNumber?: string;
   accountNumber?: string;
   bankName?: string;
+  kycName?: string;
 }
 
 export interface SurveySubmission {
   id?: string;
   userId: string;
   surveyId: string;
-  pointsEarned: number;
+  bitsEarned: number;
   submittedAt: any;
 }
 
@@ -77,5 +70,5 @@ export interface AppNotification {
   message: string;
   read: boolean;
   createdAt: any;
-  type: 'survey' | 'trivia' | 'redemption' | 'referral' | 'system';
+  type: 'survey' | 'redemption' | 'referral' | 'system';
 }

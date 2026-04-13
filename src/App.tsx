@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Home, ClipboardList, Gift, User, Coins, Wifi, CheckCircle2, Bell, BrainCircuit } from 'lucide-react';
+import { Home, ClipboardList, Gift, User, Coins, Wifi, CheckCircle2, BrainCircuit, Wallet } from 'lucide-react';
 import { doc, onSnapshot, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, setDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from './firebase';
 
@@ -10,7 +10,9 @@ import SurveysView from './views/SurveysView';
 import ActiveSurveyView from './views/ActiveSurveyView';
 import RewardsView from './views/RewardsView';
 import ProfileView from './views/ProfileView';
-import TriviaView from './views/TriviaView';
+import { OnboardingView } from './views/OnboardingView';
+import { ProfileBuilderView } from './views/ProfileBuilderView';
+import { WalletView } from './views/WalletView';
 
 // Helper to get or create a persistent user ID
 const getPersistentUserId = () => {
@@ -23,7 +25,7 @@ const getPersistentUserId = () => {
 };
 
 export default function App() {
-  const [view, setView] = useState<View>('home');
+  const [view, setView] = useState<View>('onboarding');
   const [userId] = useState(getPersistentUserId());
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,6 @@ export default function App() {
   
   const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
   const [toast, setToast] = useState<{title: string, message: string} | null>(null);
-  const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
 
   const showToast = (title: string, message: string) => {
     setToast({ title, message });
@@ -75,7 +76,8 @@ export default function App() {
                 email: '',
                 displayName: 'Guest User',
                 photoURL: '',
-                points: 0,
+                bits: 1000000,
+                walletBalance: 0,
                 referralCode: newReferralCode,
                 createdAt: serverTimestamp(),
               });
@@ -131,45 +133,33 @@ export default function App() {
     setView('survey_active');
   };
 
-  const finishSurvey = async (pointsEarned: number, surveyId: string) => {
+  const finishSurvey = async (bitsEarned: number, surveyId: string) => {
     if (!userProfile) return;
     try {
       // Create submission
       await addDoc(collection(db, 'surveySubmissions'), {
         userId: userId,
         surveyId,
-        pointsEarned,
+        bitsEarned,
         submittedAt: serverTimestamp()
       });
 
-      // Update user points
+      // Update user bits
       await updateDoc(doc(db, 'users', userId), {
-        points: increment(pointsEarned)
+        bits: increment(bitsEarned)
       });
 
       setActiveSurvey(null);
       setView('home');
-      showToast('Survey Completed!', `You earned ${pointsEarned} points.`);
+      showToast('Survey Completed!', `You earned ${bitsEarned} Bits.`);
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'surveySubmissions');
     }
   };
 
-  const handleEarnTriviaPoints = async (pointsEarned: number) => {
-    if (!userProfile) return;
-    try {
-      await updateDoc(doc(db, 'users', userId), {
-        points: increment(pointsEarned)
-      });
-      showToast('Trivia Completed!', `You earned ${pointsEarned} points.`);
-    } catch (err) {
-      handleFirestoreError(err, OperationType.WRITE, 'users');
-    }
-  };
-
   const redeemReward = async (option: RewardOption, details?: any) => {
     if (!userProfile) return;
-    if (userProfile.points >= option.cost) {
+    if (userProfile.bits >= option.cost) {
       try {
         // Update user profile with new details if provided
         if (details && Object.keys(details).length > 0) {
@@ -186,16 +176,26 @@ export default function App() {
           status: 'pending' // or completed
         });
 
-        // Deduct points
-        await updateDoc(doc(db, 'users', userId), {
-          points: increment(-option.cost)
-        });
+        // Deduct bits and add to wallet if cash
+        const updates: any = {
+          bits: increment(-option.cost)
+        };
+        
+        // If it's a cash reward, add to wallet balance
+        if (option.id.startsWith('c')) {
+           // Extract amount from title or cost. Let's say cost 1100 = 1000 cash.
+           // Or just hardcode based on option.id for mock
+           const amount = option.id === 'c1' ? 1000 : option.id === 'c2' ? 5000 : 0;
+           updates.walletBalance = increment(amount);
+        }
+
+        await updateDoc(doc(db, 'users', userId), updates);
 
         // Add notification
         await addDoc(collection(db, 'notifications'), {
           userId: userId,
           title: 'Redemption Successful',
-          message: `You redeemed ${option.title} for ${option.cost} points.`,
+          message: `You redeemed ${option.title} for ${option.cost} Bits.`,
           read: false,
           createdAt: serverTimestamp(),
           type: 'redemption'
@@ -206,7 +206,7 @@ export default function App() {
         handleFirestoreError(err, OperationType.WRITE, 'redemptions');
       }
     } else {
-      showToast('Not enough points', `You need ${option.cost - userProfile.points} more points.`);
+      showToast('Not enough Bits', `You need ${option.cost - userProfile.bits} more Bits.`);
     }
   };
 
@@ -258,19 +258,27 @@ export default function App() {
     email: '',
     displayName: 'Guest User',
     photoURL: '',
-    points: 0,
+    bits: 0,
+    walletBalance: 0,
     referralCode: userId.substring(0, 8).toUpperCase(),
     createdAt: null as any
   };
 
   const completedSurveyIds = submissions.map(s => s.surveyId);
-  const unreadNotifsCount = notifications.filter(n => !n.read).length;
+
+  if (view === 'onboarding') {
+    return <OnboardingView setView={setView} />;
+  }
+
+  if (view === 'profile-builder') {
+    return <ProfileBuilderView setView={setView} />;
+  }
 
   return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center sm:p-8 font-sans">
-      <div className="w-full max-w-md h-[100dvh] sm:h-[850px] bg-gray-50 sm:rounded-[3rem] sm:shadow-2xl overflow-hidden relative flex flex-col sm:border-[12px] border-neutral-800">
+    <div className="min-h-screen bg-[#E5E9E4] flex items-center justify-center sm:p-8 font-sans">
+      <div className="w-full max-w-md h-[100dvh] sm:h-[850px] bg-[#F5F5F5] sm:rounded-[3rem] sm:shadow-2xl overflow-hidden relative flex flex-col">
         
-        <div className="hidden sm:flex justify-between items-center px-6 py-3 bg-white text-xs font-medium text-gray-800 z-50">
+        <div className="hidden sm:flex justify-between items-center px-6 py-3 bg-[#F5F5F5] text-xs font-medium text-gray-800 z-50">
           <span>9:41</span>
           <div className="flex items-center gap-2">
             <Wifi size={14} />
@@ -282,67 +290,36 @@ export default function App() {
 
         <>
           {view !== 'survey_active' && activeProfile && (
-            <header className="bg-white px-6 py-4 flex justify-between items-center z-10 border-b-4 border-brand-dark relative">
-                <div>
-                  <h1 className="text-2xl font-bold text-brand-dark tracking-tight uppercase">Rivabit</h1>
-                  <p className="text-sm text-gray-500 font-bold uppercase tracking-wide">Hello, {activeProfile.displayName?.split(' ')[0] || 'User'}</p>
+            <header className="bg-[#F5F5F5] px-6 py-4 flex justify-between items-center z-10 relative">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-[#1F2937] rounded-lg flex items-center justify-center text-white font-bold text-xl">R</div>
+                  <div>
+                    <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Rivabit</h1>
+                    <p className="text-sm text-gray-500">Hello, {activeProfile.displayName?.split(' ')[0] || 'User'}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <button 
-                    onClick={() => {
-                      setShowNotificationsPanel(!showNotificationsPanel);
-                      if (!showNotificationsPanel) markNotificationsRead();
-                    }}
-                    className="relative p-2 text-brand-dark hover:bg-[#E8F0FE] rounded-xl transition-colors border-2 border-transparent hover:border-brand-dark"
+                    onClick={() => setView('wallet')}
+                    className="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-full text-gray-900 font-medium shadow-sm hover:bg-gray-200 transition-colors"
                   >
-                    <Bell size={24} />
-                    {unreadNotifsCount > 0 && (
-                      <span className="absolute top-1 right-1 w-3 h-3 bg-[#FF90E8] rounded-full border-2 border-brand-dark"></span>
-                    )}
+                    <Wallet size={18} />
+                    <span>₦{activeProfile.walletBalance?.toLocaleString() || '0'}</span>
                   </button>
                   <motion.div 
-                    key={activeProfile.points}
-                    initial={{ scale: 1.2, color: '#10b981' }}
-                    animate={{ scale: 1, color: '#1E242D' }}
-                    className="flex items-center gap-1.5 bg-[#FFC900] px-3 py-1.5 rounded-xl text-brand-dark font-bold border-2 border-brand-dark shadow-[2px_2px_0px_0px_rgba(30,36,45,1)]"
+                    key={activeProfile.bits}
+                    initial={{ scale: 1.1, color: '#10b981' }}
+                    animate={{ scale: 1, color: '#111827' }}
+                    className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full text-gray-900 font-medium shadow-sm"
                   >
-                    <Coins size={20} />
-                    <span>{activeProfile.points}</span>
+                    <Coins size={18} className="text-[#1F2937]" />
+                    <span>{activeProfile.bits?.toLocaleString() || '0'}</span>
                   </motion.div>
                 </div>
-
-                {/* Notifications Dropdown */}
-                <AnimatePresence>
-                  {showNotificationsPanel && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="absolute top-full right-4 mt-2 w-80 bg-white rounded-2xl border-4 border-brand-dark shadow-[4px_4px_0px_0px_rgba(30,36,45,1)] overflow-hidden z-50"
-                    >
-                      <div className="p-4 border-b-4 border-brand-dark bg-[#FF90E8]">
-                        <h3 className="font-bold text-brand-dark uppercase tracking-wide">Notifications</h3>
-                      </div>
-                      <div className="max-h-80 overflow-y-auto p-2">
-                        {notifications.length > 0 ? notifications.map(n => (
-                          <div key={n.id} className={`p-3 rounded-xl mb-2 border-2 border-brand-dark ${!n.read ? 'bg-[#E8F0FE]' : 'bg-white'}`}>
-                            <h4 className="text-sm font-bold text-brand-dark uppercase tracking-wide">{n.title}</h4>
-                            <p className="text-xs text-gray-600 mt-0.5 font-bold">{n.message}</p>
-                            <span className="text-[10px] text-gray-400 mt-1 block font-bold uppercase">
-                              {n.createdAt ? new Date(n.createdAt.toDate()).toLocaleString() : 'Just now'}
-                            </span>
-                          </div>
-                        )) : (
-                          <p className="text-sm text-gray-500 text-center py-6 font-bold">No notifications yet.</p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </header>
             )}
 
-            <main className="flex-1 overflow-y-auto relative bg-gray-50 pb-24" onClick={() => showNotificationsPanel && setShowNotificationsPanel(false)}>
+            <main className="flex-1 overflow-y-auto relative bg-[#F5F5F5] pb-24">
               <AnimatePresence mode="wait">
                 {view === 'home' && activeProfile && (
                   <HomeView 
@@ -360,10 +337,11 @@ export default function App() {
                     completedSurveys={completedSurveyIds} 
                   />
                 )}
-                {view === 'trivia' && (
-                  <TriviaView 
-                    key="trivia" 
-                    onEarnPoints={handleEarnTriviaPoints}
+                {view === 'wallet' && (
+                  <WalletView 
+                    key="wallet" 
+                    userProfile={activeProfile}
+                    setUserProfile={setUserProfile as any}
                   />
                 )}
                 {view === 'survey_active' && activeSurvey && (
@@ -394,10 +372,9 @@ export default function App() {
             </main>
 
             {view !== 'survey_active' && (
-              <nav className="absolute bottom-0 w-full bg-white border-t-4 border-brand-dark px-2 py-4 pb-safe flex justify-between items-center z-20">
+              <nav className="absolute bottom-0 w-full bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.05)] px-2 py-4 pb-safe flex justify-between items-center z-20 rounded-t-3xl">
                 <NavItem icon={Home} label="Home" isActive={view === 'home'} onClick={() => setView('home')} />
-                <NavItem icon={ClipboardList} label="Surveys" isActive={view === 'surveys'} onClick={() => setView('surveys')} />
-                <NavItem icon={BrainCircuit} label="Trivia" isActive={view === 'trivia'} onClick={() => setView('trivia')} />
+                <NavItem icon={ClipboardList} label="Answer" isActive={view === 'surveys'} onClick={() => setView('surveys')} />
                 <NavItem icon={Gift} label="Rewards" isActive={view === 'rewards'} onClick={() => setView('rewards')} />
                 <NavItem icon={User} label="Profile" isActive={view === 'profile'} onClick={() => setView('profile')} />
               </nav>
@@ -410,14 +387,14 @@ export default function App() {
               initial={{ opacity: 0, y: -50, scale: 0.9 }}
               animate={{ opacity: 1, y: 20, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.9 }}
-              className="absolute top-0 left-4 right-4 bg-brand-dark text-white p-4 rounded-2xl border-4 border-brand-dark shadow-[4px_4px_0px_0px_rgba(30,36,45,1)] z-50 flex items-start gap-3"
+              className="absolute top-0 left-4 right-4 bg-white text-gray-900 p-4 rounded-2xl shadow-lg z-50 flex items-start gap-3 border border-gray-100"
             >
-              <div className="bg-[#23A094] p-2 rounded-xl text-brand-dark border-2 border-brand-dark">
-                <CheckCircle2 size={24} />
+              <div className="bg-gray-100 p-2 rounded-full text-[#1F2937]">
+                <CheckCircle2 size={20} />
               </div>
               <div>
-                <h4 className="font-bold text-lg uppercase tracking-wide">{toast.title}</h4>
-                <p className="text-sm text-gray-300 mt-0.5 font-bold">{toast.message}</p>
+                <h4 className="font-medium text-sm">{toast.title}</h4>
+                <p className="text-xs text-gray-500 mt-0.5">{toast.message}</p>
               </div>
             </motion.div>
           )}
@@ -432,18 +409,18 @@ function NavItem({ icon: Icon, label, isActive, onClick }: { icon: React.Element
   return (
     <button 
       onClick={onClick}
-      className={`flex flex-col items-center justify-center w-14 gap-1 transition-colors ${isActive ? 'text-brand-blue' : 'text-gray-400 hover:text-brand-dark'}`}
+      className={`flex flex-col items-center justify-center w-14 gap-1 transition-colors ${isActive ? 'text-[#1F2937]' : 'text-gray-400 hover:text-gray-600'}`}
     >
       <div className="relative">
-        <Icon size={24} strokeWidth={isActive ? 3 : 2} />
+        <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
         {isActive && (
           <motion.div 
             layoutId="nav-indicator"
-            className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-brand-blue rounded-full"
+            className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#1F2937] rounded-full"
           />
         )}
       </div>
-      <span className={`text-[9px] font-bold uppercase tracking-wide mt-1 ${isActive ? 'text-brand-blue' : ''}`}>{label}</span>
+      <span className={`text-[10px] font-medium mt-1 ${isActive ? 'text-[#1F2937]' : ''}`}>{label}</span>
     </button>
   );
 }

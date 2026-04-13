@@ -1,10 +1,10 @@
-import { Survey, RewardCategory, TriviaQuestion } from './types';
+import { Survey, RewardCategory } from './types';
 
 export const MOCK_SURVEYS: Survey[] = [
   {
     id: 's1',
     title: 'Tech Habits 2026',
-    points: 150,
+    bits: 150,
     time: '3 min',
     category: 'Technology',
     questions: [
@@ -16,7 +16,7 @@ export const MOCK_SURVEYS: Survey[] = [
   {
     id: 's2',
     title: 'Consumer Preferences',
-    points: 200,
+    bits: 200,
     time: '5 min',
     category: 'Shopping',
     questions: [
@@ -27,7 +27,7 @@ export const MOCK_SURVEYS: Survey[] = [
   {
     id: 's3',
     title: 'Daily Commute',
-    points: 100,
+    bits: 100,
     time: '2 min',
     category: 'Lifestyle',
     questions: [
@@ -37,7 +37,7 @@ export const MOCK_SURVEYS: Survey[] = [
   {
     id: 's4',
     title: 'Health & Fitness',
-    points: 250,
+    bits: 250,
     time: '4 min',
     category: 'Health',
     questions: [
@@ -48,7 +48,7 @@ export const MOCK_SURVEYS: Survey[] = [
   {
     id: 's5',
     title: 'Entertainment Choices',
-    points: 120,
+    bits: 120,
     time: '3 min',
     category: 'Entertainment',
     questions: [
@@ -59,7 +59,7 @@ export const MOCK_SURVEYS: Survey[] = [
   {
     id: 's6',
     title: 'Food & Dining',
-    points: 180,
+    bits: 180,
     time: '4 min',
     category: 'Food',
     questions: [
@@ -69,93 +69,23 @@ export const MOCK_SURVEYS: Survey[] = [
   }
 ];
 
-export const MOCK_TRIVIA: TriviaQuestion[] = [
-  {
-    id: 't1',
-    question: 'What is the capital of Nigeria?',
-    options: ['Lagos', 'Abuja', 'Kano', 'Port Harcourt'],
-    correctAnswerIndex: 1,
-    points: 10
-  },
-  {
-    id: 't2',
-    question: 'Which planet is known as the Red Planet?',
-    options: ['Venus', 'Jupiter', 'Mars', 'Saturn'],
-    correctAnswerIndex: 2,
-    points: 10
-  },
-  {
-    id: 't3',
-    question: 'What is the largest ocean on Earth?',
-    options: ['Atlantic Ocean', 'Indian Ocean', 'Arctic Ocean', 'Pacific Ocean'],
-    correctAnswerIndex: 3,
-    points: 10
-  },
-  {
-    id: 't4',
-    question: 'Who wrote "Things Fall Apart"?',
-    options: ['Wole Soyinka', 'Chinua Achebe', 'Chimamanda Ngozi Adichie', 'Buchi Emecheta'],
-    correctAnswerIndex: 1,
-    points: 15
-  },
-  {
-    id: 't5',
-    question: 'What is the chemical symbol for Gold?',
-    options: ['Ag', 'Au', 'Fe', 'Cu'],
-    correctAnswerIndex: 1,
-    points: 15
-  }
-];
-
 export const REWARD_CATEGORIES: RewardCategory[] = [
-  {
-    id: 'airtime',
-    title: 'Airtime',
-    iconName: 'Smartphone',
-    color: 'bg-[#FF90E8]', // Pink
-    options: [
-      { id: 'a1', title: '₦500 Airtime', cost: 500, description: 'Direct top-up to your mobile number' },
-      { id: 'a2', title: '₦1000 Airtime', cost: 950, description: 'Direct top-up to your mobile number' }
-    ]
-  },
-  {
-    id: 'data',
-    title: 'Data',
-    iconName: 'Wifi',
-    color: 'bg-[#23A094]', // Teal
-    options: [
-      { id: 'd1', title: '1GB Data Bundle', cost: 300, description: 'Valid for 7 days' },
-      { id: 'd2', title: '5GB Data Bundle', cost: 1200, description: 'Valid for 30 days' }
-    ]
-  },
   {
     id: 'cash',
     title: 'Cash',
     iconName: 'Banknote',
-    color: 'bg-[#90A8ED]', // Light Blue
     options: [
-      { id: 'c1', title: '₦1000 Bank Transfer', cost: 1100, description: 'Transferred within 24 hours' },
-      { id: 'c2', title: '₦5000 Bank Transfer', cost: 5000, description: 'Transferred within 2-3 business days' }
+      { id: 'c1', title: '₦1000 to Wallet', cost: 1100, description: 'Added to your in-app wallet immediately' },
+      { id: 'c2', title: '₦5000 to Wallet', cost: 5000, description: 'Added to your in-app wallet immediately' }
     ]
   },
   {
     id: 'raffle',
-    title: 'Raffle',
+    title: 'Feeling lucky?',
     iconName: 'Ticket',
-    color: 'bg-[#FFC900]', // Yellow
     options: [
-      { id: 'r1', title: 'PS5 Pro Raffle Ticket', cost: 50, description: 'Draw on Friday. 1 Ticket.' },
-      { id: 'r2', title: 'iPhone 17 Raffle (10x)', cost: 400, description: 'Draw at end of month. 10 Tickets.' }
-    ]
-  },
-  {
-    id: 'trivia',
-    title: 'Trivia',
-    iconName: 'BrainCircuit',
-    color: 'bg-[#FF90E8]', // Pink
-    options: [
-      { id: 't1', title: 'Daily Trivia Pass', cost: 20, description: 'Play today\'s trivia to win up to 500 pts' },
-      { id: 't2', title: 'Mega Trivia Tournament', cost: 100, description: 'Weekend tournament entry' }
+      { id: 'r1', title: '₦50,000 Weekly Draw', cost: 50, description: 'Draw on Friday. 1 Ticket.' },
+      { id: 'r2', title: '₦200,000 Monthly Mega Draw', cost: 400, description: 'Draw at end of month. 10 Tickets.' }
     ]
   }
 ];
