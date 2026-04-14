@@ -9,39 +9,49 @@ interface RewardsViewProps {
   userProfile: UserProfile;
   redeemReward: (opt: RewardOption, details?: any) => void;
   redemptions: Redemption[];
+  showToast: (title: string, message: string) => void;
 }
 
-const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, redemptions }) => {
+const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, redemptions, showToast }) => {
   const [activeCategory, setActiveCategory] = useState<string>(REWARD_CATEGORIES[0].id);
   const [selectedOption, setSelectedOption] = useState<RewardOption | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [raffleTicket, setRaffleTicket] = useState<string | null>(null);
 
   const category = REWARD_CATEGORIES.find(c => c.id === activeCategory)!;
   const CategoryIcon = (Icons as any)[category.iconName];
 
   const handleConfirm = () => {
     if (!selectedOption) return;
-    if (userProfile.bits < selectedOption.cost) return;
+    if (userProfile.berry < selectedOption.cost) {
+      showToast('Insufficient Berry', `You need ${selectedOption.cost - userProfile.berry} more Berry to redeem this.`);
+      setSelectedOption(null);
+      return;
+    }
     
     // For raffle, generate a mock ticket number
     const details: any = {};
     if (activeCategory === 'raffle') {
-      details.ticketNumber = '#' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const ticket = '#' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      details.ticketNumber = ticket;
+      setRaffleTicket(ticket);
     }
     
     redeemReward(selectedOption, details);
     
     setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      setSelectedOption(null);
-    }, 2000);
+    if (activeCategory !== 'raffle') {
+      setTimeout(() => {
+        setShowSuccess(false);
+        setSelectedOption(null);
+      }, 2000);
+    }
   };
 
   const handleShare = () => {
-    const text = `I just won the raffle draw on @rivabit! 🎉 Join me and start earning today.`;
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+    // Automatically claim the prize
+    showToast('Prize Claimed!', '₦50,000 has been added to your wallet balance.');
     setShowShareModal(false);
   };
 
@@ -54,7 +64,7 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
     >
       <div className="p-6 pb-2">
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">Rewards Store</h2>
-        <p className="text-gray-500 text-sm mb-6">Spend your Bits on awesome rewards.</p>
+        <p className="text-gray-500 text-sm mb-6">Spend your Berry on awesome rewards.</p>
         
         {/* Horizontal Category Scroll */}
         <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-6 px-6">
@@ -91,14 +101,16 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
             className="space-y-4"
           >
             {category.options.map(option => {
-              const canAfford = userProfile.bits >= option.cost;
+              const canAfford = userProfile.berry >= option.cost;
               const myTickets = redemptions.filter(r => r.rewardId === option.id);
 
               return (
                 <div key={option.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-medium text-gray-900 text-lg">{option.title}</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-gray-900 text-lg">{option.title}</h4>
+                      </div>
                       <p className="text-sm text-gray-500 mt-1">{option.description}</p>
                       {activeCategory === 'raffle' && myTickets.length > 0 && (
                         <div className="mt-3 space-y-2">
@@ -108,12 +120,12 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
                           </div>
                           {/* Mock Winning Ticket Logic */}
                           {option.id === 'r1' && (
-                            <div className="bg-green-50 border border-green-200 p-3 rounded-xl mt-2">
-                              <p className="text-xs text-green-600 font-semibold mb-1">Previous Draw Winner</p>
+                            <div className="bg-secondary/10 border border-secondary/20 p-3 rounded-xl mt-2">
+                              <p className="text-xs text-secondary font-semibold mb-1">Previous Draw Winner</p>
                               <p className="text-sm font-medium text-gray-900">Ticket: #A10294</p>
                               <button 
                                 onClick={() => setShowShareModal(true)}
-                                className="mt-2 text-xs font-medium text-white bg-green-600 px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors"
+                                className="mt-2 text-xs font-medium text-white bg-secondary px-3 py-1.5 rounded-lg hover:bg-secondary/90 transition-colors"
                               >
                                 Claim Prize
                               </button>
@@ -122,16 +134,31 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 text-[#1F2937] font-semibold bg-gray-100 px-2.5 py-1 rounded-lg">
-                      <Coins size={16} />
-                      {option.cost}
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="flex items-center gap-1 text-primary font-semibold bg-gray-100 px-2.5 py-1 rounded-lg">
+                        <Coins size={16} />
+                        {option.cost}
+                      </div>
+                      {option.status && (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap ${
+                          option.status === 'Open' ? 'bg-secondary/10 text-secondary' :
+                          option.status === 'Drawing Soon' ? 'bg-orange-100 text-orange-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {option.status}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <button
                     onClick={() => setSelectedOption(option)}
-                    className="w-full py-3 rounded-xl font-medium text-sm transition-colors border border-gray-200 bg-white text-gray-900 hover:bg-gray-50 shadow-sm mt-2"
+                    disabled={option.status === 'Closed'}
+                    className="w-full bg-accent text-white py-3 px-5 rounded-full font-semibold text-base flex items-center justify-between transition-all hover:opacity-90 active:scale-[0.98] shadow-sm mt-2 disabled:opacity-50 disabled:cursor-not-allowed group"
                   >
-                    Redeem Now
+                    <span>{option.status === 'Closed' ? 'Draw Closed' : 'Redeem Now'}</span>
+                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-primary group-hover:translate-x-1 transition-transform">
+                      <Icons.ArrowRight size={16} />
+                    </div>
                   </button>
                 </div>
               );
@@ -154,49 +181,85 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-white w-full sm:w-[360px] rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-safe shadow-xl"
+              className="bg-white w-full sm:w-[360px] rounded-t-[2rem] sm:rounded-[2rem] p-6 pb-10 sm:pb-8 shadow-xl"
             >
               {showSuccess ? (
                 <div className="py-8 flex flex-col items-center text-center">
                   <motion.div 
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="w-20 h-20 bg-gray-100 text-[#1F2937] rounded-full flex items-center justify-center mb-4"
+                    className="w-20 h-20 bg-gray-100 text-primary rounded-full flex items-center justify-center mb-4"
                   >
                     <CheckCircle2 size={40} />
                   </motion.div>
                   <h3 className="text-2xl font-semibold text-gray-900 mb-2">
                     {activeCategory === 'raffle' ? 'Ticket Secured!' : 'Redemption Successful!'}
                   </h3>
-                  <p className="text-gray-500">
-                    {activeCategory === 'raffle' ? 'Good luck in the draw. Your ticket number will be available shortly.' : 'Funds have been added to your wallet.'}
+                  <p className="text-gray-500 mb-6">
+                    {activeCategory === 'raffle' ? 'Good luck in the draw. Your ticket number is below.' : 'Funds have been added to your wallet.'}
                   </p>
+                  
+                  {activeCategory === 'raffle' && raffleTicket && (
+                    <div className="w-full bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-6 mb-6">
+                      <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1">Your Ticket Number</p>
+                      <p className="text-3xl font-mono font-bold text-primary">{raffleTicket}</p>
+                    </div>
+                  )}
+
+                  <div className="w-full space-y-3">
+                    {activeCategory === 'raffle' && (
+                      <button 
+                        onClick={() => {
+                          setShowSuccess(false);
+                          setSelectedOption(null);
+                          setRaffleTicket(null);
+                          setShowShareModal(true);
+                        }}
+                        className="w-full bg-primary text-white py-4 rounded-xl font-medium text-lg hover:bg-primary/90 transition-colors shadow-sm"
+                      >
+                        Claim Prize
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => {
+                        setShowSuccess(false);
+                        setSelectedOption(null);
+                        setRaffleTicket(null);
+                      }}
+                      className="w-full bg-white text-gray-700 py-4 rounded-xl font-medium text-lg hover:bg-gray-50 transition-colors border border-gray-200"
+                    >
+                      {activeCategory === 'raffle' ? 'Dismiss' : 'Close'}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
                   <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6 sm:hidden" />
-                  <div className={`w-16 h-16 rounded-full bg-gray-100 text-[#1F2937] flex items-center justify-center mx-auto mb-4`}>
+                  <div className={`w-16 h-16 rounded-full bg-gray-100 text-primary flex items-center justify-center mx-auto mb-4`}>
                     {CategoryIcon && <CategoryIcon size={32} />}
                   </div>
                   <h3 className="text-2xl font-semibold text-center text-gray-900 mb-2">Confirm Redemption</h3>
                   <p className="text-center text-gray-500 mb-6">
-                    Spend <span className="font-medium text-gray-900">{selectedOption.cost} Bits</span> on {selectedOption.title}?
+                    Spend <span className="font-medium text-gray-900">{selectedOption.cost} Berry</span> on {selectedOption.title}?
                   </p>
                   
-                  {userProfile.bits < selectedOption.cost && (
+                  {userProfile.berry < selectedOption.cost && (
                     <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 flex items-start gap-2 text-sm font-medium border border-red-100">
                       <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                      <span>Not enough Bits. You need {selectedOption.cost - userProfile.bits} more Bits.</span>
+                      <span>Not enough Berry. You need {selectedOption.cost - userProfile.berry} more Berry.</span>
                     </div>
                   )}
 
                   <div className="space-y-3">
                     <button 
                       onClick={handleConfirm}
-                      disabled={userProfile.bits < selectedOption.cost}
-                      className="w-full bg-[#1F2937] text-white py-4 rounded-xl font-medium text-lg hover:bg-gray-900 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={userProfile.berry < selectedOption.cost}
+                      className="w-full bg-accent text-white py-4 px-6 rounded-full font-semibold text-lg flex items-center justify-between transition-all hover:opacity-90 active:scale-[0.98] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed group"
                     >
-                      Confirm & Redeem
+                      <span>Confirm & Redeem</span>
+                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-primary group-hover:translate-x-1 transition-transform">
+                        <Icons.ArrowRight size={20} />
+                      </div>
                     </button>
                     <button 
                       onClick={() => setSelectedOption(null)}
@@ -226,14 +289,14 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
               animate={{ scale: 1 }}
               className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl text-center"
             >
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-[#1F2937] mx-auto mb-4">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-primary mx-auto mb-4">
                 <Share2 size={32} />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Claim Your Prize</h3>
-              <p className="text-sm text-gray-500 mb-6">Share your win on social media and tag @rivabit to claim your prize!</p>
+              <p className="text-sm text-gray-500 mb-6">Click the button below to instantly claim your raffle winnings!</p>
               
               <div className="bg-gray-50 p-4 rounded-xl mb-6 text-left border border-gray-100">
-                <p className="text-sm text-gray-700 italic">"I just won the raffle draw on @rivabit! 🎉 Join me and start earning today."</p>
+                <p className="text-sm text-gray-700 font-medium">Congratulations! You've won the weekly draw. Your prize of ₦50,000 is ready for collection.</p>
               </div>
 
               <div className="flex gap-3">
@@ -241,14 +304,14 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
                   onClick={() => setShowShareModal(false)}
                   className="flex-1 py-3 font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200"
                 >
-                  Cancel
+                  Later
                 </button>
                 <button 
                   onClick={handleShare}
-                  className="flex-1 py-3 font-medium text-white bg-[#1F2937] rounded-xl hover:bg-gray-900 flex items-center justify-center gap-2"
+                  className="flex-1 py-3 font-medium text-white bg-primary rounded-xl hover:bg-primary/90 flex items-center justify-center gap-2"
                 >
-                  <Share2 size={18} />
-                  Share
+                  <CheckCircle2 size={18} />
+                  Claim Now
                 </button>
               </div>
             </motion.div>

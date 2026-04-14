@@ -2,19 +2,25 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "A user of the survey app.",
+      "description": "A user of the berry app.",
       "type": "object",
       "properties": {
         "uid": { "type": "string", "description": "Firebase Auth UID" },
         "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
         "photoURL": { "type": "string" },
-        "points": { "type": "number", "description": "Current points balance" },
+        "berry": { "type": "number", "description": "Current berry balance" },
+        "walletBalance": { "type": "number", "description": "Cash balance in Naira" },
         "referralCode": { "type": "string", "description": "Unique referral code for this user" },
         "referredBy": { "type": "string", "description": "UID of the user who referred this user (optional)" },
+        "referralCount": { "type": "number" },
+        "phoneNumber": { "type": "string" },
+        "accountNumber": { "type": "string" },
+        "bankName": { "type": "string" },
+        "kycName": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email", "points", "referralCode", "createdAt"]
+      "required": ["uid", "berry", "referralCode", "createdAt"]
     },
     "SurveySubmission": {
       "title": "SurveySubmission",
@@ -23,10 +29,10 @@
       "properties": {
         "userId": { "type": "string" },
         "surveyId": { "type": "string" },
-        "pointsEarned": { "type": "number" },
+        "berryEarned": { "type": "number" },
         "submittedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "surveyId", "pointsEarned", "submittedAt"]
+      "required": ["userId", "surveyId", "berryEarned", "submittedAt"]
     },
     "Redemption": {
       "title": "Redemption",
@@ -52,7 +58,7 @@
         "message": { "type": "string" },
         "read": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
-        "type": { "type": "string", "enum": ["survey", "trivia", "redemption", "referral", "system"] }
+        "type": { "type": "string", "enum": ["survey", "redemption", "referral", "system"] }
       },
       "required": ["userId", "title", "message", "read", "createdAt", "type"]
     }

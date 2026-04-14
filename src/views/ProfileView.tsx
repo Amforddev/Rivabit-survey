@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Coins, Trophy, ChevronRight, LogOut, Copy, CheckCircle2, History, Gift, Edit2 } from 'lucide-react';
+import { User, Coins, Trophy, ChevronRight, LogOut, Copy, CheckCircle2, History, Edit2 } from 'lucide-react';
 import { UserProfile, Redemption, SurveySubmission } from '../types';
 import { logOut } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -65,8 +65,8 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
                   <h4 className="font-medium text-gray-900 text-base">Survey Completed</h4>
                   <p className="text-xs text-gray-500 mt-1">{new Date(sub.submittedAt?.toDate() || Date.now()).toLocaleDateString()}</p>
                 </div>
-                <div className="flex items-center gap-1 text-[#1F2937] font-semibold bg-gray-100 px-3 py-1.5 rounded-full text-sm">
-                  +{sub.bitsEarned} Bits
+                <div className="flex items-center gap-1 text-primary font-semibold bg-gray-100 px-3 py-1.5 rounded-full text-sm">
+                  +{sub.berryEarned} Berry
                 </div>
               </div>
             )) : <p className="text-gray-500 text-center py-8 text-sm">No surveys completed yet.</p>
@@ -80,7 +80,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
                   <p className="text-xs text-gray-500 mt-1">{new Date(red.redeemedAt?.toDate() || Date.now()).toLocaleDateString()} • {red.status}</p>
                 </div>
                 <div className="flex items-center gap-1 text-gray-700 font-semibold bg-gray-100 px-3 py-1.5 rounded-full text-sm">
-                  -{red.cost} Bits
+                  -{red.cost} Berry
                 </div>
               </div>
             )) : <p className="text-gray-500 text-center py-8 text-sm">No redemptions yet.</p>
@@ -114,7 +114,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
               type="text" 
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-1 text-center font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1F2937]"
+              className="border border-gray-300 rounded-lg px-3 py-1 text-center font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
               autoFocus
               onBlur={handleSaveName}
               onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
@@ -123,7 +123,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
         ) : (
           <div className="flex items-center gap-2 mb-1 cursor-pointer group" onClick={() => setIsEditingName(true)}>
             <h2 className="text-2xl font-semibold text-gray-900">{userProfile.displayName || 'User'}</h2>
-            <Edit2 size={16} className="text-gray-400 group-hover:text-[#1F2937] transition-colors" />
+            <Edit2 size={16} className="text-gray-400 group-hover:text-primary transition-colors" />
           </div>
         )}
         
@@ -132,16 +132,36 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
 
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
-          <Coins className="text-[#1F2937] mb-1" size={24} />
-          <span className="text-2xl font-semibold text-gray-900">{userProfile.bits}</span>
-          <span className="text-xs text-gray-500 mt-1">Total Bits</span>
+          <Coins className="text-primary mb-1" size={24} />
+          <span className="text-2xl font-semibold text-gray-900">{userProfile.berry}</span>
+          <span className="text-xs text-gray-500 mt-1">Total Berry</span>
         </div>
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
-          <Trophy className="text-[#1F2937] mb-1" size={24} />
-          <span className="text-2xl font-semibold text-gray-900">{submissions.length}</span>
-          <span className="text-xs text-gray-500 mt-1">Surveys Done</span>
+          <Trophy className="text-primary mb-1" size={24} />
+          <span className="text-2xl font-semibold text-gray-900">{userProfile.referralCount || 0}</span>
+          <span className="text-xs text-gray-500 mt-1">Referrals</span>
         </div>
       </div>
+
+      {/* Achievement Section */}
+      {(userProfile.referralCount || 0) >= 5 && (
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden"
+        >
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+              <Trophy size={32} className="text-white fill-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">Elite Referrer!</h3>
+              <p className="text-sm text-white/90">You've referred 5+ friends. Extra rewards unlocked!</p>
+            </div>
+          </div>
+          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+        </motion.div>
+      )}
 
       {/* Referral Section matching the image */}
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
@@ -156,7 +176,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
             <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] p-2">
               <div className="flex items-center gap-2">
                 <span className="text-gray-900 font-medium text-sm">Share your link</span>
-                <Copy size={14} className="text-[#1F2937]" />
+                <Copy size={14} className="text-primary" />
               </div>
             </div>
           </div>
@@ -183,35 +203,55 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
             <div className="mt-0.5"><Coins size={16} className="text-gray-600" /></div>
             <div>
               <p className="text-xs text-gray-500">You get</p>
-              <p className="text-sm font-medium text-gray-900">500 Bits</p>
+              <p className="text-sm font-medium text-gray-900">500 Berry</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <div className="mt-0.5"><Gift size={16} className="text-gray-600" /></div>
+            <div className="mt-0.5">
+              <img 
+                src="https://storage.googleapis.com/m-infra.appspot.com/v0/b/m-infra.appspot.com/o/zxrvbrecwreqepsdlvfu6m%2F1744626136746.png?alt=media&token=c191a45c-0994-469b-9860-249119619163" 
+                alt="Gift" 
+                className="w-4 h-4 object-contain"
+                referrerPolicy="no-referrer"
+              />
+            </div>
             <div>
               <p className="text-xs text-gray-500">They get</p>
-              <p className="text-sm font-medium text-gray-900">200 Bits</p>
+              <p className="text-sm font-medium text-gray-900">200 Berry</p>
             </div>
           </div>
         </div>
         
         <div className="text-center mb-4">
           <p className="text-xs text-gray-500 mb-1">Refer 5 friends and get extra rewards</p>
-          <div className="flex items-center justify-center gap-1 text-sm font-medium text-gray-900">
-            <Gift size={14} /> Free shipping
+          <div className="flex items-center justify-center gap-2">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div 
+                  key={i} 
+                  className={`w-2 h-2 rounded-full ${i <= (userProfile.referralCount || 0) ? 'bg-primary' : 'bg-gray-200'}`} 
+                />
+              ))}
+            </div>
+            <span className="text-xs font-medium text-gray-900">{(userProfile.referralCount || 0)}/5</span>
           </div>
+          {(userProfile.referralCount || 0) >= 5 && (
+            <div className="flex items-center justify-center gap-1 text-sm font-medium text-secondary mt-2">
+              <CheckCircle2 size={14} /> Achievement Unlocked!
+            </div>
+          )}
         </div>
 
         <div className="relative flex items-center">
           <input 
             type="text" 
             readOnly 
-            value={`https://rivabit.com/ref/${userProfile.referralCode}`}
-            className="w-full bg-white border border-[#1F2937] rounded-xl py-3 pl-4 pr-24 text-sm text-gray-600 focus:outline-none"
+            value={`https://berry.com/ref/${userProfile.referralCode}`}
+            className="w-full bg-white border border-primary rounded-full py-3 pl-4 pr-24 text-sm text-gray-600 focus:outline-none"
           />
           <button 
             onClick={copyReferral}
-            className="absolute right-0 top-0 bottom-0 bg-[#1F2937] text-white px-6 rounded-xl flex items-center gap-2 hover:bg-gray-900 transition-colors"
+            className="absolute right-0 top-0 bottom-0 bg-primary text-white px-6 rounded-full flex items-center gap-2 hover:bg-primary/90 transition-colors"
           >
             {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
             <span className="text-sm font-medium">copy</span>
@@ -235,7 +275,12 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
           className="w-full flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <Gift size={20} className="text-gray-600" />
+            <img 
+              src="https://storage.googleapis.com/m-infra.appspot.com/v0/b/m-infra.appspot.com/o/zxrvbrecwreqepsdlvfu6m%2F1744626136746.png?alt=media&token=c191a45c-0994-469b-9860-249119619163" 
+              alt="Rewards" 
+              className="w-6 h-6 object-contain"
+              referrerPolicy="no-referrer"
+            />
             <span className="font-medium text-gray-900 text-base">Redemption History</span>
           </div>
           <ChevronRight size={20} className="text-gray-400" />
@@ -248,6 +293,24 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
             <LogOut size={20} className="text-red-500" />
             <span className="font-medium text-red-500 text-base">Log Out</span>
           </div>
+        </button>
+      </div>
+
+      <div className="mt-4 p-4 bg-gray-100 rounded-2xl border border-dashed border-gray-300">
+        <p className="text-xs text-gray-500 font-mono mb-2 uppercase tracking-wider">Developer Tools</p>
+        <button 
+          onClick={async () => {
+            try {
+              await updateDoc(doc(db, 'users', userProfile.uid), {
+                berry: 1000000
+              });
+            } catch (e) {
+              console.error("Failed to add berry", e);
+            }
+          }}
+          className="w-full py-3 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors shadow-sm"
+        >
+          RESET TO 1,000,000 BERRY
         </button>
       </div>
     </motion.div>

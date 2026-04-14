@@ -4,7 +4,7 @@ export const MOCK_SURVEYS: Survey[] = [
   {
     id: 's1',
     title: 'Tech Habits 2026',
-    bits: 150,
+    berry: 150,
     time: '3 min',
     category: 'Technology',
     questions: [
@@ -16,7 +16,7 @@ export const MOCK_SURVEYS: Survey[] = [
   {
     id: 's2',
     title: 'Consumer Preferences',
-    bits: 200,
+    berry: 200,
     time: '5 min',
     category: 'Shopping',
     questions: [
@@ -27,7 +27,7 @@ export const MOCK_SURVEYS: Survey[] = [
   {
     id: 's3',
     title: 'Daily Commute',
-    bits: 100,
+    berry: 100,
     time: '2 min',
     category: 'Lifestyle',
     questions: [
@@ -37,7 +37,7 @@ export const MOCK_SURVEYS: Survey[] = [
   {
     id: 's4',
     title: 'Health & Fitness',
-    bits: 250,
+    berry: 250,
     time: '4 min',
     category: 'Health',
     questions: [
@@ -48,7 +48,7 @@ export const MOCK_SURVEYS: Survey[] = [
   {
     id: 's5',
     title: 'Entertainment Choices',
-    bits: 120,
+    berry: 120,
     time: '3 min',
     category: 'Entertainment',
     questions: [
@@ -59,7 +59,7 @@ export const MOCK_SURVEYS: Survey[] = [
   {
     id: 's6',
     title: 'Food & Dining',
-    bits: 180,
+    berry: 180,
     time: '4 min',
     category: 'Food',
     questions: [
@@ -84,8 +84,8 @@ export const REWARD_CATEGORIES: RewardCategory[] = [
     title: 'Feeling lucky?',
     iconName: 'Ticket',
     options: [
-      { id: 'r1', title: '₦50,000 Weekly Draw', cost: 50, description: 'Draw on Friday. 1 Ticket.' },
-      { id: 'r2', title: '₦200,000 Monthly Mega Draw', cost: 400, description: 'Draw at end of month. 10 Tickets.' }
+      { id: 'r1', title: '₦50,000 Weekly Draw', cost: 50, description: 'Draw on Friday. 1 Ticket.', status: 'Open' },
+      { id: 'r2', title: '₦200,000 Monthly Mega Draw', cost: 400, description: 'Draw at end of month. 10 Tickets.', status: 'Drawing Soon' }
     ]
   }
 ];

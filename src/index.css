@@ -1,8 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=clash-grotesk@200,300,400,500,600,700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Clash Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --color-primary: #4A1D3D;
+  --color-secondary: #B76E79;
+  --color-accent: #7D3C5E; /* Lighter berry instead of green */
+
+  --animate-gradient: gradient-motion 5s ease infinite;
+
+  @keyframes gradient-motion {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
 }
 
 @layer utilities {
@@ -16,9 +27,21 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  .btn-primary {
+    @apply w-full bg-gradient-to-r from-secondary via-accent to-secondary animate-gradient text-white py-4 px-6 rounded-full font-semibold text-lg flex items-center justify-between transition-all hover:opacity-90 active:scale-[0.98] shadow-sm;
+    background-size: 200% 200%;
+  }
+  .btn-icon {
+    @apply w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white;
+  }
+  .bg-size-200 {
+    background-size: 200% 200%;
+  }
 }
 
 body {
-  font-family: "Inter", sans-serif;
+  font-family: "Clash Grotesk", sans-serif;
   -webkit-tap-highlight-color: transparent;
+  background-color: #0F1115; /* Dark background like image */
+  color: white;
 }

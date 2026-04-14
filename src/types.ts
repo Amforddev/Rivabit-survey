@@ -3,7 +3,7 @@ export type View = 'onboarding' | 'profile-builder' | 'home' | 'surveys' | 'surv
 export interface Survey {
   id: string;
   title: string;
-  bits: number;
+  berry: number;
   time: string;
   category: string;
   questions: Question[];
@@ -27,6 +27,7 @@ export interface RewardOption {
   title: string;
   cost: number;
   description: string;
+  status?: 'Open' | 'Closed' | 'Drawing Soon';
 }
 
 export interface UserProfile {
@@ -34,7 +35,7 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   photoURL?: string;
-  bits: number;
+  berry: number;
   walletBalance: number;
   referralCode: string;
   referredBy?: string;
@@ -43,13 +44,14 @@ export interface UserProfile {
   accountNumber?: string;
   bankName?: string;
   kycName?: string;
+  referralCount?: number;
 }
 
 export interface SurveySubmission {
   id?: string;
   userId: string;
   surveyId: string;
-  bitsEarned: number;
+  berryEarned: number;
   submittedAt: any;
 }
 

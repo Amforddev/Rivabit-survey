@@ -46,7 +46,7 @@ const SurveysView: React.FC<SurveysViewProps> = ({ completedSurveys, startSurvey
                   <h4 className="font-medium text-gray-900 text-base line-through">{survey.title}</h4>
                   <p className="text-xs text-gray-500 mt-1">Completed</p>
                 </div>
-                <CheckCircle2 className="text-[#1F2937]" size={24} />
+                <CheckCircle2 className="text-primary" size={24} />
               </div>
             ))}
           </div>
@@ -66,7 +66,7 @@ const SurveyCard: React.FC<{ survey: Survey, onClick: () => void }> = ({ survey,
       onClick={onClick}
       className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer flex gap-4 items-center transition-colors hover:bg-gray-50"
     >
-      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-[#1F2937] shrink-0">
+      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-primary shrink-0">
         <ClipboardList size={24} />
       </div>
       <div className="flex-1 min-w-0">
@@ -79,9 +79,9 @@ const SurveyCard: React.FC<{ survey: Survey, onClick: () => void }> = ({ survey,
           <span>{survey.category}</span>
         </div>
       </div>
-      <div className="flex items-center gap-1 text-[#1F2937] font-semibold text-sm shrink-0 bg-gray-100 px-3 py-1.5 rounded-full">
+      <div className="flex items-center gap-1 text-primary font-semibold text-sm shrink-0 bg-gray-100 px-3 py-1.5 rounded-full">
         <Coins size={14} />
-        {survey.bits}
+        {survey.berry}
       </div>
     </motion.div>
   );

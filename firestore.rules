@@ -9,20 +9,25 @@ service cloud.firestore {
     // Document ID: {userId}
     // Fields:
     //   - uid: string (required)
-    //   - email: string (required)
+    //   - email: string (optional)
     //   - displayName: string (optional)
     //   - photoURL: string (optional)
-    //   - points: number (required)
+    //   - berry: number (required)
+    //   - walletBalance: number (required)
     //   - referralCode: string (required)
-    //   - referredBy: string (optional)
+    //   - referralCount: number (required)
     //   - createdAt: timestamp (required)
+    //   - phoneNumber: string (optional)
+    //   - accountNumber: string (optional)
+    //   - bankName: string (optional)
+    //   - kycName: string (optional)
     //
     // Collection: surveySubmissions
     // Document ID: {submissionId}
     // Fields:
     //   - userId: string (required)
     //   - surveyId: string (required)
-    //   - pointsEarned: number (required)
+    //   - berryEarned: number (required)
     //   - submittedAt: timestamp (required)
     //
     // Collection: redemptions
@@ -43,7 +48,7 @@ service cloud.firestore {
     //   - message: string (required)
     //   - read: boolean (required)
     //   - createdAt: timestamp (required)
-    //   - type: string (required, enum: ['survey', 'trivia', 'redemption', 'referral', 'system'])
+    //   - type: string (required, enum: ['survey', 'redemption', 'referral', 'system'])
     //
     // ===============================================================
 
@@ -51,11 +56,7 @@ service cloud.firestore {
     // Helper Functions
     // ===============================================================
     function isAuthenticated() {
-      return true; // Authentication removed as per user request
-    }
-
-    function isOwner(userId) {
-      return true; // Authentication removed as per user request
+      return true; // Authentication removed as per user request for this prototype
     }
 
     function hasRequiredFields(fields) {
@@ -63,11 +64,7 @@ service cloud.firestore {
     }
 
     function isValidEmail(email) {
-      return email is string;
-    }
-
-    function isPositiveNumber(field) {
-      return request.resource.data[field] is number && request.resource.data[field] >= 0;
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     }
 
     // ===============================================================
@@ -75,26 +72,28 @@ service cloud.firestore {
     // ===============================================================
     function isValidUser() {
       let data = request.resource.data;
-      return hasRequiredFields(['uid', 'email', 'points', 'referralCode', 'createdAt']) &&
+      return hasRequiredFields(['uid', 'berry', 'walletBalance', 'referralCode', 'referralCount', 'createdAt']) &&
              data.uid is string &&
-             isValidEmail(data.email) &&
-             data.points is number && data.points >= 0 &&
+             data.berry is number &&
+             data.walletBalance is number &&
              data.referralCode is string && data.referralCode.size() > 0 && data.referralCode.size() <= 20 &&
+             data.referralCount is number &&
              data.createdAt is timestamp &&
+             (!('email' in data) || (data.email is string && isValidEmail(data.email))) &&
              (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
              (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
-             (!('referredBy' in data) || (data.referredBy is string && data.referredBy.size() <= 50)) &&
              (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 20)) &&
              (!('accountNumber' in data) || (data.accountNumber is string && data.accountNumber.size() <= 20)) &&
-             (!('bankName' in data) || (data.bankName is string && data.bankName.size() <= 100));
+             (!('bankName' in data) || (data.bankName is string && data.bankName.size() <= 100)) &&
+             (!('kycName' in data) || (data.kycName is string && data.kycName.size() <= 100));
     }
 
     function isValidSurveySubmission() {
       let data = request.resource.data;
-      return hasRequiredFields(['userId', 'surveyId', 'pointsEarned', 'submittedAt']) &&
+      return hasRequiredFields(['userId', 'surveyId', 'berryEarned', 'submittedAt']) &&
              data.userId is string &&
              data.surveyId is string && data.surveyId.size() > 0 && data.surveyId.size() <= 50 &&
-             data.pointsEarned is number && data.pointsEarned >= 0 &&
+             data.berryEarned is number &&
              data.submittedAt is timestamp;
     }
 
@@ -104,7 +103,7 @@ service cloud.firestore {
              data.userId is string &&
              data.rewardId is string && data.rewardId.size() > 0 && data.rewardId.size() <= 50 &&
              data.rewardTitle is string && data.rewardTitle.size() > 0 && data.rewardTitle.size() <= 100 &&
-             data.cost is number && data.cost > 0 &&
+             data.cost is number &&
              data.redeemedAt is timestamp &&
              data.status in ['pending', 'completed', 'failed'];
     }
@@ -117,7 +116,7 @@ service cloud.firestore {
              data.message is string && data.message.size() > 0 && data.message.size() <= 500 &&
              data.read is bool &&
              data.createdAt is timestamp &&
-             data.type in ['survey', 'trivia', 'redemption', 'referral', 'system'];
+             data.type in ['survey', 'redemption', 'referral', 'system'];
     }
 
     // ===============================================================
@@ -127,23 +126,22 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, list: if true;
       allow create: if isValidUser();
-      allow update: if (isValidUser() && 
-                    request.resource.data.uid == resource.data.uid &&
-                    request.resource.data.createdAt == resource.data.createdAt) ||
-                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['points']) &&
-                     request.resource.data.points == resource.data.points + 100);
+      allow update: if isValidUser();
     }
 
     match /surveySubmissions/{submissionId} {
-      allow read, list, create: if true;
+      allow read, list: if true;
+      allow create: if isValidSurveySubmission();
     }
 
     match /redemptions/{redemptionId} {
-      allow read, list, create: if true;
+      allow read, list: if true;
+      allow create: if isValidRedemption();
     }
 
     match /notifications/{notificationId} {
-      allow read, list, create, update: if true;
+      allow read, list: if true;
+      allow create, update: if isValidNotification();
     }
   }
 }

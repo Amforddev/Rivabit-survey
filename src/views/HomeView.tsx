@@ -23,7 +23,7 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
       className="p-6 space-y-8"
     >
       {/* Hero Card */}
-      <div className="bg-[#1F2937] rounded-3xl p-6 text-white shadow-md relative overflow-hidden">
+      <div className="bg-gradient-to-br from-primary via-accent to-primary animate-gradient bg-size-200 rounded-3xl p-6 text-white shadow-md relative overflow-hidden">
         <h2 className="font-medium mb-1 text-gray-200">Welcome back, {userProfile.displayName?.split(' ')[0] || 'User'}!</h2>
         <div className="text-2xl font-semibold mb-4 flex items-center gap-2 leading-tight">
           <Zap className="text-white fill-white opacity-80" size={24} />
@@ -31,9 +31,12 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
         </div>
         <button 
           onClick={() => setView('surveys')}
-          className="bg-white text-gray-900 px-5 py-2.5 rounded-xl font-medium text-sm shadow-sm hover:bg-gray-50 transition-colors"
+          className="bg-gradient-to-r from-accent via-secondary to-accent animate-gradient bg-size-200 text-white px-6 py-3 rounded-full font-semibold text-sm shadow-sm hover:opacity-90 transition-all flex items-center gap-2 group"
         >
-          Answer Now
+          <span>Answer Now</span>
+          <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-primary group-hover:translate-x-0.5 transition-transform">
+            <Icons.ArrowRight size={14} />
+          </div>
         </button>
       </div>
 
@@ -46,7 +49,7 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
             ))
           ) : (
             <div className="bg-white p-6 rounded-2xl text-center shadow-sm border border-gray-100">
-              <CheckCircle2 className="mx-auto text-[#1F2937] mb-2" size={40} />
+              <CheckCircle2 className="mx-auto text-primary mb-2" size={40} />
               <p className="text-gray-900 font-medium text-lg">You're all caught up!</p>
             </div>
           )}
@@ -66,7 +69,7 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
                 onClick={() => setView('rewards')}
                 className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
               >
-                <div className={`w-12 h-12 rounded-full bg-gray-100 text-[#1F2937] flex items-center justify-center`}>
+                <div className={`w-12 h-12 rounded-full bg-gray-100 text-primary flex items-center justify-center`}>
                   {Icon && <Icon size={24} />}
                 </div>
                 <span className="font-medium text-gray-900 text-sm">{cat.title}</span>
@@ -89,7 +92,7 @@ const SurveyCard: React.FC<{ survey: Survey, onClick: () => void }> = ({ survey,
       onClick={onClick}
       className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer flex gap-4 items-center transition-colors hover:bg-gray-50"
     >
-      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-[#1F2937] shrink-0">
+      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-primary shrink-0">
         <ClipboardList size={24} />
       </div>
       <div className="flex-1 min-w-0">
@@ -102,9 +105,9 @@ const SurveyCard: React.FC<{ survey: Survey, onClick: () => void }> = ({ survey,
           <span>{survey.category}</span>
         </div>
       </div>
-      <div className="flex items-center gap-1 text-[#1F2937] font-semibold text-sm shrink-0 bg-gray-100 px-3 py-1.5 rounded-full">
+      <div className="flex items-center gap-1 text-primary font-semibold text-sm shrink-0 bg-gray-100 px-3 py-1.5 rounded-full">
         <Coins size={14} />
-        {survey.bits}
+        {survey.berry}
       </div>
     </motion.div>
   );

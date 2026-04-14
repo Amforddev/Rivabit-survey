@@ -27,7 +27,7 @@ const ActiveSurveyView: React.FC<ActiveSurveyViewProps> = ({ survey, onFinish, o
       } else {
         setIsCompleting(true);
         setTimeout(() => {
-          onFinish(survey.bits, survey.id);
+          onFinish(survey.berry, survey.id);
         }, 1500);
       }
     }, 600);
@@ -38,18 +38,18 @@ const ActiveSurveyView: React.FC<ActiveSurveyViewProps> = ({ survey, onFinish, o
       <motion.div 
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="h-full flex flex-col items-center justify-center p-6 text-center bg-[#1F2937]"
+        className="h-full flex flex-col items-center justify-center p-6 text-center bg-primary"
       >
         <motion.div 
           initial={{ scale: 0 }}
           animate={{ scale: 1, rotate: 360 }}
           transition={{ type: "spring", damping: 12 }}
-          className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 text-[#1F2937] shadow-lg"
+          className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 text-primary shadow-lg"
         >
           <CheckCircle2 size={48} />
         </motion.div>
         <h2 className="text-3xl font-semibold text-white mb-2">Survey Complete!</h2>
-        <p className="text-blue-50 font-medium text-lg mb-6">You've earned <span className="bg-white text-gray-900 px-3 py-1 rounded-full ml-1">{survey.bits} Bits</span></p>
+        <p className="text-blue-50 font-medium text-lg mb-6">You've earned <span className="bg-white text-gray-900 px-3 py-1 rounded-full ml-1">{survey.berry} Berry</span></p>
       </motion.div>
     );
   }
@@ -69,7 +69,7 @@ const ActiveSurveyView: React.FC<ActiveSurveyViewProps> = ({ survey, onFinish, o
         <div className="flex-1">
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
             <motion.div 
-              className="h-full bg-[#1F2937]"
+              className="h-full bg-primary"
               initial={{ width: `${((currentQIndex) / survey.questions.length) * 100}%` }}
               animate={{ width: `${((currentQIndex + 1) / survey.questions.length) * 100}%` }}
               transition={{ duration: 0.3 }}
@@ -107,7 +107,7 @@ const ActiveSurveyView: React.FC<ActiveSurveyViewProps> = ({ survey, onFinish, o
                     disabled={selectedOption !== null}
                     className={`w-full text-left p-4 rounded-xl border font-medium text-base transition-all duration-200 ${
                       isSelected 
-                        ? 'border-blue-500 bg-gray-100 text-gray-900' 
+                        ? 'border-primary bg-gray-100 text-gray-900' 
                         : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm'
                     }`}
                   >

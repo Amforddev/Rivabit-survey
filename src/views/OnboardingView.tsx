@@ -1,149 +1,221 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
-import { Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ArrowRight, ChevronLeft } from 'lucide-react';
 import { View } from '../types';
+
+type AuthStep = 'welcome' | 'signup' | 'signin' | 'forgot';
 
 interface OnboardingViewProps {
   setView: (view: View) => void;
 }
 
 export function OnboardingView({ setView }: OnboardingViewProps) {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [step, setStep] = useState<AuthStep>('welcome');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleAuth = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSignUp) {
-      setView('profile-builder');
-    } else {
-      // If signing in, assume they already built profile, go to home
-      setView('home');
-    }
+  const handleBack = () => {
+    if (step === 'signup' || step === 'signin') setStep('welcome');
+    else if (step === 'forgot') setStep('signin');
   };
 
-  const handleSocialAuth = () => {
-    if (isSignUp) {
-      setView('profile-builder');
-    } else {
-      setView('home');
+  const handleMockAuth = (isSignUp: boolean = false) => {
+    setLoading(true);
+    // Simulate a delay for UI feedback
+    setTimeout(() => {
+      setLoading(false);
+      if (isSignUp) {
+        setView('profile-builder');
+      } else {
+        setView('home');
+      }
+    }, 1500);
+  };
+
+  const renderStep = () => {
+    switch (step) {
+      case 'welcome':
+        return (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-8"
+          >
+            <div className="text-center space-y-4">
+              <div className="w-32 h-32 mx-auto bg-white rounded-[2.5rem] p-6 shadow-xl">
+                <img src="https://images.unsplash.com/photo-1596333522248-10186b8bb5d5?q=80&w=400&h=400&auto=format&fit=crop" alt="berry Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+              </div>
+              <h1 className="text-5xl font-bold text-white tracking-tighter">berry</h1>
+              <p className="text-gray-400 text-lg">Your opinions, harvested into rewards.</p>
+            </div>
+            <div className="space-y-4">
+              <button onClick={() => setStep('signup')} className="btn-primary group">
+                <span>Create Account</span>
+                <div className="btn-icon group-hover:translate-x-1 transition-transform">
+                  <ArrowRight size={24} />
+                </div>
+              </button>
+              <button onClick={() => setStep('signin')} className="w-full py-4 text-white font-semibold text-lg border-2 border-white/10 rounded-full hover:bg-white/5 transition-colors">
+                Sign In
+              </button>
+            </div>
+
+            <div className="pt-4">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10"></div></div>
+                <div className="relative flex justify-center text-sm"><span className="px-2 bg-[#0F1115] text-gray-500">Or continue with</span></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  onClick={handleMockAuth}
+                  disabled={loading}
+                  className="flex items-center justify-center gap-2 py-3 px-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors disabled:opacity-50"
+                >
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" referrerPolicy="no-referrer" />
+                  <span className="text-white font-medium">Google</span>
+                </button>
+                <button 
+                  onClick={handleMockAuth}
+                  disabled={loading}
+                  className="flex items-center justify-center gap-2 py-3 px-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors disabled:opacity-50"
+                >
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/facebook.svg" alt="Facebook" className="w-5 h-5" referrerPolicy="no-referrer" />
+                  <span className="text-white font-medium">Facebook</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        );
+
+      case 'signup':
+        return (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="space-y-2">
+              <h2 className="text-4xl font-bold text-white">Sign Up</h2>
+              <p className="text-gray-400">Welcome to berry, let's get you started</p>
+            </div>
+            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleMockAuth(true); }}>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white">Email</label>
+                <input type="email" placeholder="Enter email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary" required />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white">Password</label>
+                <input type="password" placeholder="At least six characters" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary" required minLength={6} />
+              </div>
+              <div className="text-center py-2">
+                <p className="text-gray-400">Already have an account? <button type="button" onClick={() => setStep('signin')} className="text-secondary font-semibold">Sign In</button></p>
+              </div>
+              <button type="submit" disabled={loading} className="btn-primary group disabled:opacity-50">
+                <span>{loading ? 'Creating Account...' : 'Continue'}</span>
+                <div className="btn-icon group-hover:translate-x-1 transition-transform">
+                  <ArrowRight size={24} />
+                </div>
+              </button>
+              <div className="flex items-center gap-3 pt-2">
+                <div className="w-6 h-6 border-2 border-secondary rounded-md flex items-center justify-center">
+                  <div className="w-3 h-3 bg-secondary rounded-sm" />
+                </div>
+                <p className="text-sm text-gray-400">I agree to the <span className="text-secondary">terms & Conditions</span></p>
+              </div>
+            </form>
+          </motion.div>
+        );
+
+      case 'signin':
+        return (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="space-y-2">
+              <h2 className="text-4xl font-bold text-white">Sign In</h2>
+              <p className="text-gray-400">Welcome Back!, let's harvest some rewards for you</p>
+            </div>
+            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleMockAuth(false); }}>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white">Email</label>
+                <input type="email" placeholder="Enter email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary" required />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white">Password</label>
+                <input type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary" required />
+              </div>
+              <div className="text-center">
+                <button type="button" onClick={() => setStep('forgot')} className="bg-[#1C1F26] text-secondary px-4 py-2 rounded-xl text-sm font-medium">Forgot Password?</button>
+              </div>
+              <div className="pt-12 space-y-6">
+                <button type="submit" disabled={loading} className="btn-primary group disabled:opacity-50">
+                  <span>{loading ? 'Signing in...' : 'Sign in'}</span>
+                  <div className="btn-icon group-hover:translate-x-1 transition-transform">
+                    <ArrowRight size={24} />
+                  </div>
+                </button>
+                <p className="text-center text-gray-400">Don't have an account? <button type="button" onClick={() => setStep('signup')} className="text-secondary font-semibold">Sign up</button></p>
+              </div>
+            </form>
+          </motion.div>
+        );
+
+      case 'forgot':
+        return (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="space-y-2">
+              <h2 className="text-4xl font-bold text-white">Forgot Password</h2>
+              <p className="text-gray-400">Lets help you reset your password</p>
+            </div>
+            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); setStep('signin'); }}>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white">Email</label>
+                <input type="email" placeholder="Enter email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary" required />
+              </div>
+              <div className="pt-32">
+                <button type="submit" disabled={loading} className="btn-primary group disabled:opacity-50">
+                  <span>{loading ? 'Sending...' : 'Confirm'}</span>
+                  <div className="btn-icon group-hover:translate-x-1 transition-transform">
+                    <ArrowRight size={24} />
+                  </div>
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        );
+      
+      default:
+        return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-white rounded-3xl shadow-sm border border-gray-100 p-8"
-      >
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-[#1F2937] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-gray-200">
-            <span className="text-white text-2xl font-bold">R</span>
-          </div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            {isSignUp ? 'Create an account' : 'Welcome back'}
-          </h1>
-          <p className="text-gray-500 mt-2">
-            {isSignUp ? 'Sign up to start earning Bits today.' : 'Sign in to access your account.'}
-          </p>
-        </div>
-
-        <form onSubmit={handleAuth} className="space-y-4">
-          {isSignUp && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                <input 
-                  type="text" 
-                  placeholder="John Doe"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1F2937] focus:border-transparent"
-                />
-              </div>
-            </div>
-          )}
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-              <input 
-                type="email" 
-                placeholder="you@example.com"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1F2937] focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-              <input 
-                type="password" 
-                placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1F2937] focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <button 
-            type="submit"
-            className="w-full bg-[#1F2937] text-white py-3.5 rounded-xl font-medium text-lg hover:bg-gray-900 transition-colors shadow-sm flex items-center justify-center gap-2 mt-6"
-          >
-            {isSignUp ? 'Sign Up' : 'Sign In'}
-            <ArrowRight size={20} />
-          </button>
-        </form>
-
-        <div className="mt-8">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with</span>
-            </div>
-          </div>
-
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <button 
-              type="button"
-              onClick={handleSocialAuth}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-              </svg>
-              <span className="text-sm font-medium text-gray-700">Google</span>
-            </button>
-            <button 
-              type="button"
-              onClick={handleSocialAuth}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              <svg className="w-5 h-5 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-              </svg>
-              <span className="text-sm font-medium text-gray-700">Facebook</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-8 text-center">
-          <p className="text-sm text-gray-600">
-            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-            <button 
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-[#1F2937] font-medium hover:underline"
-            >
-              {isSignUp ? 'Sign In' : 'Sign Up'}
-            </button>
-          </p>
-        </div>
-      </motion.div>
+    <div className="h-full bg-[#0F1115] flex flex-col p-8 overflow-y-auto scrollbar-hide">
+      {step !== 'welcome' && (
+        <button 
+          onClick={handleBack}
+          className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-gray-900 mb-8 shrink-0"
+        >
+          <ChevronLeft size={24} />
+        </button>
+      )}
+      
+      <div className="flex-1 flex flex-col justify-center">
+        <AnimatePresence mode="wait">
+          {renderStep()}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
