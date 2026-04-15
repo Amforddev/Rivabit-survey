@@ -16,10 +16,6 @@ import { ProfileBuilderView } from './views/ProfileBuilderView';
 import { WalletView } from './views/WalletView';
 import { SplashScreen } from './components/SplashScreen';
 
-import logoImg from './assets/logo.png';
-import logo2Img from './assets/logo2.png';
-import rewardsImg from './assets/rewards.png';
-
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [view, setView] = useState<View>('onboarding');
@@ -252,7 +248,7 @@ export default function App() {
             {view !== 'survey_active' && (
               <header className="bg-[#fbf9ee] px-6 py-2 flex justify-between items-center z-10 relative max-w-md mx-auto w-full">
                 <div className="flex items-center gap-2">
-                  <img src={logo2Img} alt="berry Logo" className="w-8 h-8 rounded-lg object-contain" />
+                  <img src="/logo2.png" alt="berry Logo" className="w-8 h-8 rounded-lg object-contain" />
                   <div>
                     <h1 className="text-xl font-bold text-gray-900 tracking-tight">berry</h1>
                     <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Hello, {activeProfile.displayName?.split(' ')[0] || 'User'}</p>
@@ -404,7 +400,7 @@ function ProminentNavItem({ isActive, onClick }: { isActive: boolean, onClick: (
            {/* Holographic effect simulation */}
            <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[radial-gradient(circle_at_center,_#fff_0%,_transparent_70%)] animate-pulse" />
            <img 
-             src={rewardsImg} 
+             src="/rewards.png" 
              alt="Rewards" 
              className={`w-10 h-10 object-contain transition-all ${isActive ? 'scale-110' : 'grayscale opacity-70'}`}
            />

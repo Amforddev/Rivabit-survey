@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ChevronLeft } from 'lucide-react';
 import { View } from '../types';
-import logo2Img from '../assets/logo2.png';
 
 type AuthStep = 'welcome' | 'signup' | 'signin' | 'forgot';
 
@@ -46,7 +45,7 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
           >
             <div className="text-center space-y-4">
               <div className="w-32 h-32 mx-auto">
-                <img src={logo2Img} alt="berry Logo" className="w-full h-full object-contain" />
+                <img src="/logo2.png" alt="berry Logo" className="w-full h-full object-contain" />
               </div>
               <h1 className="text-5xl font-bold text-white tracking-tighter">berry</h1>
               <p className="text-gray-400 text-lg">Your opinions, harvested into rewards.</p>
@@ -202,7 +201,7 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
   };
 
   return (
-    <div className="h-full bg-[#0F1115] flex flex-col p-8 overflow-y-auto scrollbar-hide">
+    <div className="flex-1 bg-[#0F1115] flex flex-col p-8 overflow-y-auto scrollbar-hide w-full">
       {step !== 'welcome' && (
         <button 
           onClick={handleBack}
