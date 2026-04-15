@@ -65,7 +65,7 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
 
   if (isFinished) {
     return (
-      <div className="h-full bg-gray-50 flex flex-col items-center justify-center p-6">
+      <div className="flex-1 bg-[#fbf9ee] flex flex-col items-center justify-center p-6 w-full">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -81,7 +81,7 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white">
               <Coins size={18} />
             </div>
-            <span className="text-xl font-semibold text-gray-900">+500 Berry Earned</span>
+            <span className="text-xl font-semibold text-gray-900">+500 Berries Earned</span>
           </div>
 
           <button 
@@ -99,23 +99,24 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
   }
 
   const currentQ = PROFILE_QUESTIONS[currentStep];
-  const progress = ((currentStep) / PROFILE_QUESTIONS.length) * 100;
+  const progressPercent = Math.round(((currentStep) / PROFILE_QUESTIONS.length) * 100);
+  const nextProgressPercent = Math.round(((currentStep + 1) / PROFILE_QUESTIONS.length) * 100);
 
   return (
-    <div className="h-full bg-gray-50 flex flex-col p-6 max-w-md mx-auto overflow-y-auto scrollbar-hide">
+    <div className="flex-1 bg-[#fbf9ee] flex flex-col p-6 max-w-md mx-auto overflow-y-auto scrollbar-hide w-full">
       <div className="pt-8 pb-6">
         <h1 className="text-2xl font-semibold text-gray-900 mb-2">Build your profile</h1>
-        <p className="text-gray-500 text-sm mb-6">Answer a few questions to get personalized surveys and earn your first 500 Berry.</p>
+        <p className="text-gray-500 text-sm mb-6">Answer a few questions to get personalized surveys and earn your first 500 Berries.</p>
         
         <div className="flex items-center justify-between text-sm font-medium text-gray-500 mb-2">
-          <span>Question {currentStep + 1} of {PROFILE_QUESTIONS.length}</span>
+          <span className="font-bold text-gray-700">{nextProgressPercent}% Completed</span>
           <span className="text-primary">{PROFILE_QUESTIONS.length - currentStep} remaining</span>
         </div>
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
           <motion.div 
             className="h-full bg-primary"
-            initial={{ width: `${progress}%` }}
-            animate={{ width: `${((currentStep + 1) / PROFILE_QUESTIONS.length) * 100}%` }}
+            initial={{ width: `${progressPercent}%` }}
+            animate={{ width: `${nextProgressPercent}%` }}
             transition={{ duration: 0.3 }}
           />
         </div>

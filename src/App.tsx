@@ -15,6 +15,8 @@ import { OnboardingView } from './views/OnboardingView';
 import { ProfileBuilderView } from './views/ProfileBuilderView';
 import { WalletView } from './views/WalletView';
 import { SplashScreen } from './components/SplashScreen';
+import logo2Img from './assets/logo2.png';
+import rewardsImg from './assets/rewards.png';
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -31,7 +33,7 @@ export default function App() {
   const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
   const [toast, setToast] = useState<{title: string, message: string} | null>(null);
 
-  const MOCK_UID = 'ui-demo-user';
+  const MOCK_UID = 'ui-demo-user-v2';
 
   const showToast = (title: string, message: string) => {
     setToast({ title, message });
@@ -72,9 +74,10 @@ export default function App() {
             walletBalance: 0,
             referralCode: newReferralCode,
             referralCount: 0,
+            kycVerified: false,
+            profileCompleted: false,
             createdAt: serverTimestamp(),
           });
-          if (user) setView('profile-builder');
         } catch (e) {
           console.error("Error creating user profile:", e);
         }
@@ -248,7 +251,7 @@ export default function App() {
             {view !== 'survey_active' && (
               <header className="bg-[#fbf9ee] px-6 py-2 flex justify-between items-center z-10 relative max-w-md mx-auto w-full">
                 <div className="flex items-center gap-2">
-                  <img src="/logo2.png" alt="berry Logo" className="w-8 h-8 rounded-lg object-contain" />
+                  <img src={logo2Img} alt="berry Logo" className="w-8 h-8 rounded-lg object-contain" />
                   <div>
                     <h1 className="text-xl font-bold text-gray-900 tracking-tight">berry</h1>
                     <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Hello, {activeProfile.displayName?.split(' ')[0] || 'User'}</p>
@@ -289,8 +292,10 @@ export default function App() {
                 {view === 'surveys' && (
                   <SurveysView 
                     key="surveys" 
+                    userProfile={activeProfile}
                     startSurvey={startSurvey} 
                     completedSurveys={completedSurveyIds} 
+                    setView={setView}
                   />
                 )}
                 {view === 'wallet' && (
@@ -323,6 +328,7 @@ export default function App() {
                     userProfile={activeProfile}
                     redemptions={redemptions}
                     submissions={submissions}
+                    showToast={showToast}
                   />
                 )}
               </AnimatePresence>
@@ -333,7 +339,7 @@ export default function App() {
               <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] px-2 py-1.5 flex justify-between items-center z-20 rounded-[2rem] border border-gray-50">
                 <div className="flex flex-1 justify-around items-center">
                   <NavItem icon={Home} label="Home" isActive={view === 'home'} onClick={() => setView('home')} />
-                  <NavItem icon={ClipboardList} label="Answers" isActive={view === 'surveys'} onClick={() => setView('surveys')} />
+                  <NavItem icon={ClipboardList} label="Answer" isActive={view === 'surveys'} onClick={() => setView('surveys')} />
                 </div>
                 
                 <ProminentNavItem isActive={view === 'rewards'} onClick={() => setView('rewards')} />
@@ -400,7 +406,7 @@ function ProminentNavItem({ isActive, onClick }: { isActive: boolean, onClick: (
            {/* Holographic effect simulation */}
            <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[radial-gradient(circle_at_center,_#fff_0%,_transparent_70%)] animate-pulse" />
            <img 
-             src="/rewards.png" 
+             src={rewardsImg} 
              alt="Rewards" 
              className={`w-10 h-10 object-contain transition-all ${isActive ? 'scale-110' : 'grayscale opacity-70'}`}
            />

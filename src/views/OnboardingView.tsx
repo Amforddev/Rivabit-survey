@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ChevronLeft } from 'lucide-react';
 import { View } from '../types';
+import logo2Img from '../assets/logo2.png';
 
-type AuthStep = 'welcome' | 'signup' | 'signin' | 'forgot';
+type AuthStep = 'welcome' | 'signup' | 'verify-email' | 'verify-phone' | 'success' | 'signin' | 'forgot';
 
 interface OnboardingViewProps {
   setView: (view: View) => void;
@@ -13,6 +14,11 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
   const [step, setStep] = useState<AuthStep>('welcome');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [referralCode, setReferralCode] = useState('');
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleBack = () => {
@@ -26,11 +32,34 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
     setTimeout(() => {
       setLoading(false);
       if (isSignUp) {
-        setView('profile-builder');
+        setStep('verify-email');
       } else {
         setView('home');
       }
     }, 1500);
+  };
+
+  const handleVerifyEmail = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setOtp('');
+      setStep('verify-phone');
+    }, 1000);
+  };
+
+  const handleVerifyPhone = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setStep('success');
+    }, 1000);
+  };
+
+  const handleSuccessContinue = () => {
+    setView('home');
   };
 
   const renderStep = () => {
@@ -45,7 +74,7 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
           >
             <div className="text-center space-y-4">
               <div className="w-32 h-32 mx-auto">
-                <img src="/logo2.png" alt="berry Logo" className="w-full h-full object-contain" />
+                <img src={logo2Img} alt="berry Logo" className="w-full h-full object-contain" />
               </div>
               <h1 className="text-5xl font-bold text-white tracking-tighter">berry</h1>
               <p className="text-gray-400 text-lg">Your opinions, harvested into rewards.</p>
@@ -102,13 +131,31 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
               <p className="text-gray-400">Welcome to berry, let's get you started</p>
             </div>
             <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleMockAuth(true); }}>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-white">First Name</label>
+                  <input type="text" placeholder="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary" required />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-white">Last Name</label>
+                  <input type="text" placeholder="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary" required />
+                </div>
+              </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-white">Email</label>
                 <input type="email" placeholder="Enter email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary" required />
               </div>
               <div className="space-y-2">
+                <label className="text-sm font-medium text-white">Phone Number</label>
+                <input type="tel" placeholder="Enter phone number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary" required />
+              </div>
+              <div className="space-y-2">
                 <label className="text-sm font-medium text-white">Password</label>
                 <input type="password" placeholder="At least six characters" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary" required minLength={6} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white">Referral Code (Optional)</label>
+                <input type="text" placeholder="Enter referral code" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary uppercase" />
               </div>
               <div className="text-center py-2">
                 <p className="text-gray-400">Already have an account? <button type="button" onClick={() => setStep('signin')} className="text-secondary font-semibold">Sign In</button></p>
@@ -126,6 +173,94 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
                 <p className="text-sm text-gray-400">I agree to the <span className="text-secondary">terms & Conditions</span></p>
               </div>
             </form>
+          </motion.div>
+        );
+
+      case 'verify-email':
+        return (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="space-y-2">
+              <h2 className="text-4xl font-bold text-white">Verify Email</h2>
+              <p className="text-gray-400">We've sent a code to {email || 'your email'}</p>
+            </div>
+            <form className="space-y-4" onSubmit={handleVerifyEmail}>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white">OTP Code</label>
+                <input type="text" placeholder="Enter 6-digit code" value={otp} onChange={(e) => setOtp(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary text-center tracking-widest text-lg" required minLength={6} maxLength={6} />
+              </div>
+              <div className="pt-8">
+                <button type="submit" disabled={loading || otp.length < 6} className="btn-primary group disabled:opacity-50">
+                  <span>{loading ? 'Verifying...' : 'Verify Email'}</span>
+                  <div className="btn-icon group-hover:translate-x-1 transition-transform">
+                    <ArrowRight size={24} />
+                  </div>
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        );
+
+      case 'verify-phone':
+        return (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="space-y-2">
+              <h2 className="text-4xl font-bold text-white">Verify Phone</h2>
+              <p className="text-gray-400">We've sent an SMS to {phoneNumber || 'your phone'}</p>
+            </div>
+            <form className="space-y-4" onSubmit={handleVerifyPhone}>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white">SMS Code</label>
+                <input type="text" placeholder="Enter 6-digit code" value={otp} onChange={(e) => setOtp(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary text-center tracking-widest text-lg" required minLength={6} maxLength={6} />
+              </div>
+              <div className="pt-8">
+                <button type="submit" disabled={loading || otp.length < 6} className="btn-primary group disabled:opacity-50">
+                  <span>{loading ? 'Verifying...' : 'Verify Phone'}</span>
+                  <div className="btn-icon group-hover:translate-x-1 transition-transform">
+                    <ArrowRight size={24} />
+                  </div>
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        );
+
+      case 'success':
+        return (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="space-y-6 text-center"
+          >
+            <div className="w-24 h-24 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center text-[#0F1115]">
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-4xl font-bold text-white">Account Created!</h2>
+              <p className="text-gray-400">Your account has been successfully created and verified.</p>
+            </div>
+            <div className="pt-8">
+              <button onClick={handleSuccessContinue} className="btn-primary group">
+                <span>Go to Dashboard</span>
+                <div className="btn-icon group-hover:translate-x-1 transition-transform">
+                  <ArrowRight size={24} />
+                </div>
+              </button>
+            </div>
           </motion.div>
         );
 

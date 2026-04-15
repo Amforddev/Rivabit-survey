@@ -18,6 +18,7 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
   const [showSuccess, setShowSuccess] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [raffleTicket, setRaffleTicket] = useState<string | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<{ticketNumber: string, drawTitle: string, date: string} | null>(null);
 
   const category = REWARD_CATEGORIES.find(c => c.id === activeCategory)!;
   const CategoryIcon = (Icons as any)[category.iconName];
@@ -118,17 +119,37 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
                             <Ticket size={14} />
                             <span>You have {myTickets.length} ticket{myTickets.length > 1 ? 's' : ''}</span>
                           </div>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {myTickets.map((t, idx) => {
+                              const tNum = t.details?.ticketNumber || `#TKT-${idx+1}`;
+                              return (
+                                <button 
+                                  key={idx} 
+                                  onClick={() => setSelectedTicket({
+                                    ticketNumber: tNum,
+                                    drawTitle: option.title,
+                                    date: new Date(t.redeemedAt?.toDate() || Date.now()).toLocaleDateString()
+                                  })}
+                                  className="text-xs font-mono bg-gray-50 border border-gray-200 px-2 py-1 rounded text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors cursor-pointer"
+                                >
+                                  {tNum}
+                                </button>
+                              );
+                            })}
+                          </div>
                           {/* Mock Winning Ticket Logic */}
                           {option.id === 'r1' && (
                             <div className="bg-secondary/10 border border-secondary/20 p-3 rounded-xl mt-2">
-                              <p className="text-xs text-secondary font-semibold mb-1">Previous Draw Winner</p>
+                              <p className="text-xs text-secondary font-semibold mb-1">Winner Ticket</p>
                               <p className="text-sm font-medium text-gray-900">Ticket: #A10294</p>
-                              <button 
-                                onClick={() => setShowShareModal(true)}
-                                className="mt-2 text-xs font-medium text-white bg-secondary px-3 py-1.5 rounded-lg hover:bg-secondary/90 transition-colors"
-                              >
-                                Claim Prize
-                              </button>
+                              {myTickets.some(t => t.details?.ticketNumber === '#A10294') && (
+                                <button 
+                                  onClick={() => setShowShareModal(true)}
+                                  className="mt-2 text-xs font-medium text-white bg-secondary px-3 py-1.5 rounded-lg hover:bg-secondary/90 transition-colors"
+                                >
+                                  Claim Prize
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
@@ -150,22 +171,73 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => setSelectedOption(option)}
-                    disabled={option.status === 'Closed'}
-                    className="w-full bg-accent text-white py-3 px-5 rounded-full font-semibold text-base flex items-center justify-between transition-all hover:opacity-90 active:scale-[0.98] shadow-sm mt-2 disabled:opacity-50 disabled:cursor-not-allowed group"
-                  >
-                    <span>{option.status === 'Closed' ? 'Draw Closed' : 'Redeem Now'}</span>
-                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-primary group-hover:translate-x-1 transition-transform">
-                      <Icons.ArrowRight size={16} />
-                    </div>
-                  </button>
+                  {option.status !== 'Closed' && (
+                    <button
+                      onClick={() => setSelectedOption(option)}
+                      className="w-full bg-accent text-white py-3 px-5 rounded-full font-semibold text-base flex items-center justify-between transition-all hover:opacity-90 active:scale-[0.98] shadow-sm mt-2 group"
+                    >
+                      <span>{activeCategory === 'raffle' ? 'Buy Ticket' : 'Redeem Now'}</span>
+                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-primary group-hover:translate-x-1 transition-transform">
+                        <Icons.ArrowRight size={16} />
+                      </div>
+                    </button>
+                  )}
                 </div>
               );
             })}
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Ticket Details Modal */}
+      <AnimatePresence>
+        {selectedTicket && (
+          <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl relative"
+            >
+              <button 
+                onClick={() => setSelectedTicket(null)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              >
+                <Icons.X size={20} />
+              </button>
+              
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-primary mb-4 mx-auto">
+                <Ticket size={32} />
+              </div>
+              
+              <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Ticket Details</h3>
+              
+              <div className="bg-gray-50 p-4 rounded-xl mb-6 border border-gray-100 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Draw</span>
+                  <span className="font-medium text-gray-900">{selectedTicket.drawTitle}</span>
+                </div>
+                <div className="h-px bg-gray-200 w-full"></div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Ticket Number</span>
+                  <span className="font-bold font-mono text-lg text-primary">{selectedTicket.ticketNumber}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Purchased</span>
+                  <span className="font-medium text-gray-900">{selectedTicket.date}</span>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => setSelectedTicket(null)}
+                className="w-full bg-gray-100 text-gray-700 py-3.5 rounded-xl font-bold text-lg hover:bg-gray-200 transition-colors"
+              >
+                Close
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Confirmation Modal */}
       <AnimatePresence>

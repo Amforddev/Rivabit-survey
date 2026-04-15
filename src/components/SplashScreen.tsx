@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import logo2Img from '../assets/logo2.png';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -56,7 +57,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
             >
               <div className="w-32 h-32 mb-6 flex items-center justify-center">
                 <img 
-                  src="/logo2.png" 
+                  src={logo2Img} 
                   alt="berry Logo" 
                   className="w-full h-full object-contain"
                 />

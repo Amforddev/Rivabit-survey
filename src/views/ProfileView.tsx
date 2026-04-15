@@ -10,9 +10,10 @@ interface ProfileViewProps {
   userProfile: UserProfile;
   redemptions: Redemption[];
   submissions: SurveySubmission[];
+  showToast: (title: string, message: string) => void;
 }
 
-const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, submissions }) => {
+const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, submissions, showToast }) => {
   const [copied, setCopied] = useState(false);
   const [showHistory, setShowHistory] = useState<'none' | 'surveys' | 'redemptions'>('none');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -34,11 +35,24 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
   const copyReferral = () => {
     navigator.clipboard.writeText(userProfile.referralCode);
     setCopied(true);
+    showToast('Copied!', 'Referral code copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleLogout = async () => {
     await logOut();
+  };
+
+  const handleResetDemo = async () => {
+    try {
+      await updateDoc(doc(db, 'users', userProfile.uid), {
+        kycVerified: false,
+        profileCompleted: false,
+      });
+      window.location.reload();
+    } catch (e) {
+      console.error("Failed to reset demo state", e);
+    }
   };
 
   if (showHistory !== 'none') {
@@ -175,8 +189,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
             </div>
             <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] p-2">
               <div className="flex items-center gap-2">
-                <span className="text-gray-900 font-medium text-sm">Share your link</span>
-                <Copy size={14} className="text-primary" />
+                <span className="text-gray-900 font-medium text-sm">Share your code</span>
               </div>
             </div>
           </div>
@@ -185,7 +198,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
               2
             </div>
             <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] p-2">
-              <span className="text-gray-900 font-medium text-sm">Your friend signs up using your link</span>
+              <span className="text-gray-900 font-medium text-sm">Your friend signs up with your code</span>
             </div>
           </div>
           <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
@@ -193,7 +206,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
               3
             </div>
             <div className="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] p-2">
-              <span className="text-gray-900 font-medium text-sm">Your friend places an order</span>
+              <span className="text-gray-900 font-medium text-sm">They complete their profile surveys</span>
             </div>
           </div>
         </div>
@@ -203,7 +216,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
             <div className="mt-0.5"><Coins size={16} className="text-gray-600" /></div>
             <div>
               <p className="text-xs text-gray-500">You get</p>
-              <p className="text-sm font-medium text-gray-900">500 Berry</p>
+              <p className="text-sm font-medium text-gray-900">500 Berries</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
@@ -217,7 +230,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
             </div>
             <div>
               <p className="text-xs text-gray-500">They get</p>
-              <p className="text-sm font-medium text-gray-900">200 Berry</p>
+              <p className="text-sm font-medium text-gray-900">200 Berries</p>
             </div>
           </div>
         </div>
@@ -242,20 +255,23 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
           )}
         </div>
 
-        <div className="relative flex items-center">
-          <input 
-            type="text" 
-            readOnly 
-            value={`https://berry.com/ref/${userProfile.referralCode}`}
-            className="w-full bg-white border border-primary rounded-full py-3 pl-4 pr-24 text-sm text-gray-600 focus:outline-none"
-          />
-          <button 
-            onClick={copyReferral}
-            className="absolute right-0 top-0 bottom-0 bg-primary text-white px-6 rounded-full flex items-center gap-2 hover:bg-primary/90 transition-colors"
-          >
-            {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-            <span className="text-sm font-medium">copy</span>
-          </button>
+        <div className="relative flex flex-col gap-2">
+          <label className="text-sm font-semibold text-gray-900">Your Referral Code</label>
+          <div className="relative flex items-center">
+            <input 
+              type="text" 
+              readOnly 
+              value={userProfile.referralCode}
+              className="w-full bg-gray-50 border-2 border-primary/20 rounded-xl py-4 pl-4 pr-24 text-lg font-bold text-primary tracking-widest focus:outline-none"
+            />
+            <button 
+              onClick={copyReferral}
+              className="absolute right-2 top-2 bottom-2 bg-primary text-white px-6 rounded-lg flex items-center gap-2 hover:bg-primary/90 transition-colors"
+            >
+              {copied ? <CheckCircle2 size={18} /> : <Copy size={18} />}
+              <span className="text-sm font-bold">Copy</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -298,6 +314,12 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
 
       <div className="mt-4 p-4 bg-gray-100 rounded-2xl border border-dashed border-gray-300">
         <p className="text-xs text-gray-500 font-mono mb-2 uppercase tracking-wider">Developer Tools</p>
+        <button 
+          onClick={handleResetDemo}
+          className="w-full bg-white border border-gray-200 text-gray-700 py-2 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors mb-2"
+        >
+          Reset Demo State (KYC & Profile)
+        </button>
         <button 
           onClick={async () => {
             try {

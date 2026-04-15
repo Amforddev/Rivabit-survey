@@ -1,9 +1,11 @@
-import React from 'react';
-import { motion } from 'motion/react';
-import { Zap, CheckCircle2, Coins, Clock, ClipboardList } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Zap, CheckCircle2, Coins, Clock, ClipboardList, ShieldAlert, UserPlus, Lock, X } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { Survey, RewardCategory, UserProfile } from '../types';
 import { MOCK_SURVEYS, REWARD_CATEGORIES } from '../data';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface HomeViewProps {
   userProfile: UserProfile;
@@ -14,6 +16,25 @@ interface HomeViewProps {
 
 const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, startSurvey, setView }) => {
   const availableSurveys = MOCK_SURVEYS.filter(s => !completedSurveys.includes(s.id));
+  const [showKycModal, setShowKycModal] = useState(false);
+  const [kycLoading, setKycLoading] = useState(false);
+  const [selectedSurvey, setSelectedSurvey] = useState<Survey | null>(null);
+
+  const handleKycVerification = () => {
+    setKycLoading(true);
+    // Mock 3rd party widget flow
+    setTimeout(async () => {
+      try {
+        await updateDoc(doc(db, 'users', userProfile.uid), {
+          kycVerified: true
+        });
+      } catch (e) {
+        console.error("Error verifying KYC", e);
+      }
+      setKycLoading(false);
+      setShowKycModal(false);
+    }, 2000);
+  };
 
   return (
     <motion.div 
@@ -22,6 +43,49 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
       exit={{ opacity: 0, x: 20 }}
       className="p-6 space-y-8"
     >
+      {/* Top Action Banners */}
+      <div className="space-y-3">
+        {!userProfile.kycVerified && (
+          <button 
+            onClick={() => setShowKycModal(true)}
+            className="w-full bg-[#FFF4F4] border border-[#FFE5E5] p-4 rounded-2xl flex items-center justify-between group hover:bg-[#FFE5E5] transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                <ShieldAlert size={20} />
+              </div>
+              <div className="text-left">
+                <h3 className="font-bold text-gray-900 text-sm">Verify your account</h3>
+                <p className="text-xs text-gray-500">Required for withdrawals</p>
+              </div>
+            </div>
+            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-gray-400 group-hover:text-red-600 transition-colors shadow-sm">
+              <Icons.ArrowRight size={16} />
+            </div>
+          </button>
+        )}
+
+        {!userProfile.profileCompleted && (
+          <button 
+            onClick={() => setView('profile-builder')}
+            className="w-full bg-[#F4F8FF] border border-[#E5EFFF] p-4 rounded-2xl flex items-center justify-between group hover:bg-[#E5EFFF] transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                <UserPlus size={20} />
+              </div>
+              <div className="text-left">
+                <h3 className="font-bold text-gray-900 text-sm">Complete your profile</h3>
+                <p className="text-xs text-gray-500">Earn 500 berries & unlock surveys</p>
+              </div>
+            </div>
+            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-gray-400 group-hover:text-blue-600 transition-colors shadow-sm">
+              <Icons.ArrowRight size={16} />
+            </div>
+          </button>
+        )}
+      </div>
+
       {/* Hero Card */}
       <div className="bg-gradient-to-br from-primary via-accent to-primary animate-gradient bg-size-200 rounded-3xl p-6 text-white shadow-md relative overflow-hidden">
         <h2 className="font-medium mb-1 text-gray-200">Welcome back, {userProfile.displayName?.split(' ')[0] || 'User'}!</h2>
@@ -42,10 +106,27 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
 
       {/* Featured Surveys */}
       <section>
+        <div className="flex justify-between items-end mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Available Surveys</h3>
+        </div>
         <div className="space-y-3">
-          {availableSurveys.length > 0 ? (
+          {!userProfile.profileCompleted ? (
+            <div className="bg-white p-6 rounded-2xl text-center shadow-sm border border-gray-100 flex flex-col items-center">
+              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 mb-3">
+                <Lock size={24} />
+              </div>
+              <h4 className="font-bold text-gray-900 mb-1">Surveys Locked</h4>
+              <p className="text-sm text-gray-500 mb-4">Complete your profile to unlock and start earning rewards.</p>
+              <button 
+                onClick={() => setView('profile-builder')}
+                className="bg-primary text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity"
+              >
+                Complete Profile
+              </button>
+            </div>
+          ) : availableSurveys.length > 0 ? (
             availableSurveys.slice(0, 2).map(survey => (
-              <SurveyCard key={survey.id} survey={survey} onClick={() => startSurvey(survey)} />
+              <SurveyCard key={survey.id} survey={survey} onClick={() => setSelectedSurvey(survey)} />
             ))
           ) : (
             <div className="bg-white p-6 rounded-2xl text-center shadow-sm border border-gray-100">
@@ -78,6 +159,111 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
           })}
         </div>
       </section>
+
+      {/* KYC Modal */}
+      <AnimatePresence>
+        {showKycModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative overflow-hidden"
+            >
+              <div className="text-center space-y-4">
+                <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto">
+                  <ShieldAlert size={32} className="text-blue-500" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">Identity Verification</h3>
+                <p className="text-gray-500 text-sm">
+                  We need to verify your identity before you can withdraw funds. This process is handled securely by our partner.
+                </p>
+                
+                <div className="pt-4 space-y-3">
+                  <button 
+                    onClick={handleKycVerification}
+                    disabled={kycLoading}
+                    className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-lg disabled:opacity-70 flex items-center justify-center gap-2"
+                  >
+                    {kycLoading ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Verifying...</span>
+                      </>
+                    ) : (
+                      'Start Verification'
+                    )}
+                  </button>
+                  <button 
+                    onClick={() => setShowKycModal(false)}
+                    disabled={kycLoading}
+                    className="w-full py-4 text-gray-500 font-semibold hover:bg-gray-50 rounded-2xl transition-colors"
+                  >
+                    Maybe Later
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {selectedSurvey && (
+          <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl relative"
+            >
+              <button 
+                onClick={() => setSelectedSurvey(null)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+              
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-primary mb-4 mx-auto">
+                <ClipboardList size={32} />
+              </div>
+              
+              <h3 className="text-xl font-bold text-gray-900 text-center mb-2">{selectedSurvey.title}</h3>
+              
+              <div className="flex justify-center gap-4 mb-6">
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500 mb-1">Reward</span>
+                  <div className="flex items-center gap-1 text-primary font-bold bg-primary/10 px-3 py-1 rounded-full">
+                    <Coins size={14} />
+                    {selectedSurvey.berry}
+                  </div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500 mb-1">Time</span>
+                  <div className="flex items-center gap-1 text-gray-700 font-medium bg-gray-100 px-3 py-1 rounded-full">
+                    <Clock size={14} />
+                    {selectedSurvey.time}
+                  </div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500 mb-1">Category</span>
+                  <div className="flex items-center gap-1 text-gray-700 font-medium bg-gray-100 px-3 py-1 rounded-full">
+                    {selectedSurvey.category}
+                  </div>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => {
+                  startSurvey(selectedSurvey);
+                  setSelectedSurvey(null);
+                }}
+                className="w-full bg-primary text-white py-3.5 rounded-xl font-bold text-lg hover:bg-primary/90 transition-colors"
+              >
+                Start Survey
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

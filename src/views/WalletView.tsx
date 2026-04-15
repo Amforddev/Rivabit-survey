@@ -10,19 +10,27 @@ interface WalletViewProps {
 
 export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProfile }) => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showBankSetupModal, setShowBankSetupModal] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showKycRequiredModal, setShowKycRequiredModal] = useState(false);
   
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [otp, setOtp] = useState('');
   
   const [bankName, setBankName] = useState(userProfile.bankName || '');
   const [accountNumber, setAccountNumber] = useState(userProfile.accountNumber || '');
-  const [kycName, setKycName] = useState(userProfile.kycName || '');
+  
+  // Mock derived customer name
+  const derivedCustomerName = `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || userProfile.displayName || 'Demo User';
 
   const handleWithdrawClick = () => {
-    if (!userProfile.bankName || !userProfile.accountNumber || !userProfile.kycName) {
+    if (!userProfile.kycVerified) {
+      setShowKycRequiredModal(true);
+      return;
+    }
+    if (!userProfile.bankName || !userProfile.accountNumber) {
       setShowBankSetupModal(true);
     } else {
       setShowWithdrawModal(true);
@@ -35,7 +43,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
       ...prev,
       bankName,
       accountNumber,
-      kycName
+      kycName: derivedCustomerName
     }));
     setShowBankSetupModal(false);
     setShowWithdrawModal(true);
@@ -45,6 +53,11 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
     e.preventDefault();
     if (Number(withdrawAmount) > userProfile.walletBalance) return;
     setShowWithdrawModal(false);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowConfirmModal(false);
     setShowOTPModal(true);
   };
 
@@ -126,6 +139,31 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
         </div>
       </div>
 
+      {/* KYC Required Modal */}
+      {showKycRequiredModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative overflow-hidden text-center"
+          >
+            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle size={32} className="text-red-500" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">KYC Required</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              You must verify your identity before you can withdraw funds. Please complete KYC from the Home screen.
+            </p>
+            <button 
+              onClick={() => setShowKycRequiredModal(false)}
+              className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-lg"
+            >
+              Understood
+            </button>
+          </motion.div>
+        </div>
+      )}
+
       {/* Modals */}
       {showBankSetupModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -138,20 +176,9 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
               <Building2 size={24} />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Setup Bank Account</h3>
-            <p className="text-sm text-gray-500 mb-6">Please provide your bank details. The name must match your KYC documents.</p>
+            <p className="text-sm text-gray-500 mb-6">Please provide your bank details. The customer name will be derived and cross-checked against your KYC name.</p>
             
             <form onSubmit={handleBankSetupSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Account Name (KYC)</label>
-                <input 
-                  type="text" 
-                  required
-                  value={kycName}
-                  onChange={e => setKycName(e.target.value)}
-                  placeholder="John Doe"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
                 <input 
@@ -173,6 +200,12 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
                   placeholder="10-digit account number"
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
+              </div>
+              
+              <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                <p className="text-xs text-blue-600 font-medium mb-1">Derived Customer Name</p>
+                <p className="text-sm text-blue-900 font-semibold">{derivedCustomerName}</p>
+                <p className="text-[10px] text-blue-500 mt-1">This will be cross-checked with your KYC records.</p>
               </div>
               
               <div className="flex gap-3 mt-6">
@@ -244,6 +277,57 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
                 </button>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl"
+          >
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Confirm Withdrawal</h3>
+            
+            <div className="bg-gray-50 p-4 rounded-xl mb-6 border border-gray-100 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">Amount</span>
+                <span className="font-bold text-lg text-gray-900">₦{Number(withdrawAmount).toLocaleString()}</span>
+              </div>
+              <div className="h-px bg-gray-200 w-full"></div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">Bank Name</span>
+                <span className="font-medium text-gray-900">{userProfile.bankName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">Account Number</span>
+                <span className="font-medium text-gray-900">{userProfile.accountNumber}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">Account Name</span>
+                <span className="font-medium text-gray-900">{userProfile.kycName}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button 
+                type="button"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setShowWithdrawModal(true);
+                }}
+                className="flex-1 py-3 font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200"
+              >
+                Back
+              </button>
+              <button 
+                onClick={handleConfirmSubmit}
+                className="flex-1 py-3 font-medium text-white bg-primary rounded-xl hover:bg-primary/90"
+              >
+                Confirm
+              </button>
+            </div>
           </motion.div>
         </div>
       )}
