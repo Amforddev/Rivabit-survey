@@ -1,4 +1,4 @@
-export type View = 'onboarding' | 'profile-builder' | 'home' | 'surveys' | 'survey_active' | 'rewards' | 'profile' | 'wallet';
+export type View = 'landing' | 'onboarding' | 'profile-builder' | 'home' | 'surveys' | 'survey_active' | 'rewards' | 'profile' | 'wallet';
 
 export interface Survey {
   id: string;

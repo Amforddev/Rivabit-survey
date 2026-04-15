@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import logo2Img from '../assets/logo2.png';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -11,7 +12,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
 
   useEffect(() => {
     if (phase === 'logo') {
-      const timer = setTimeout(() => setPhase('text'), 2500);
+      const timer = setTimeout(() => setPhase('text'), 10000);
       return () => clearTimeout(timer);
     }
   }, [phase]);
@@ -54,12 +55,11 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
               transition={{ duration: 1, ease: "easeOut" }}
               className="relative z-10 flex flex-col items-center"
             >
-              <div className="w-32 h-32 bg-white rounded-[2.5rem] p-6 shadow-2xl mb-6 flex items-center justify-center">
+              <div className="w-32 h-32 mb-6 flex items-center justify-center">
                 <img 
-                  src="https://images.unsplash.com/photo-1596333522248-10186b8bb5d5?q=80&w=200&h=200&auto=format&fit=crop" 
+                  src={logo2Img} 
                   alt="berry Logo" 
                   className="w-full h-full object-contain"
-                  referrerPolicy="no-referrer"
                 />
               </div>
               <motion.h1 

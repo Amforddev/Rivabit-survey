@@ -16,6 +16,10 @@ import { ProfileBuilderView } from './views/ProfileBuilderView';
 import { WalletView } from './views/WalletView';
 import { SplashScreen } from './components/SplashScreen';
 
+import logoImg from './assets/logo.png';
+import logo2Img from './assets/logo2.png';
+import rewardsImg from './assets/rewards.png';
+
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [view, setView] = useState<View>('onboarding');
@@ -231,26 +235,13 @@ export default function App() {
   const completedSurveyIds = submissions.map(s => s.surveyId);
 
   return (
-    <div className="min-h-screen bg-[#0F1115] flex items-center justify-center font-sans overflow-hidden p-4 sm:p-8">
-      {/* Phone Frame Decoration */}
-      <div className="relative w-full max-w-[450px] h-[90vh] sm:h-[850px] bg-[#F5F5F5] rounded-[3rem] shadow-[0_0_0_12px_#1C1F26,0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col border-[8px] border-[#1C1F26]">
+    <div className="min-h-screen bg-[#fbf9ee] font-sans flex flex-col relative overflow-hidden">
         
         {showSplash && (
           <div className="absolute inset-0 z-[100]">
             <SplashScreen onFinish={() => setShowSplash(false)} />
           </div>
         )}
-
-        {/* Status Bar (Mobile Look) */}
-        <div className="flex justify-between items-center px-10 pt-8 pb-4 bg-[#F5F5F5] text-xs font-bold text-gray-900 z-50">
-          <span>9:42</span>
-          <div className="flex items-center gap-2">
-            <Wifi size={14} strokeWidth={3} />
-            <div className="w-6 h-3 border-2 border-gray-900 rounded-sm relative">
-              <div className="absolute left-0.5 top-0.5 bottom-0.5 w-3 bg-gray-900 rounded-[1px]"></div>
-            </div>
-          </div>
-        </div>
 
         {view === 'onboarding' ? (
           <OnboardingView setView={setView} />
@@ -259,9 +250,9 @@ export default function App() {
         ) : (
           <>
             {view !== 'survey_active' && (
-              <header className="bg-[#F5F5F5] px-6 py-2 flex justify-between items-center z-10 relative">
+              <header className="bg-[#fbf9ee] px-6 py-2 flex justify-between items-center z-10 relative max-w-md mx-auto w-full">
                 <div className="flex items-center gap-2">
-                  <img src="https://images.unsplash.com/photo-1596333522248-10186b8bb5d5?q=80&w=200&h=200&auto=format&fit=crop" alt="berry Logo" className="w-8 h-8 rounded-lg object-contain" referrerPolicy="no-referrer" />
+                  <img src={logo2Img} alt="berry Logo" className="w-8 h-8 rounded-lg object-contain" />
                   <div>
                     <h1 className="text-xl font-bold text-gray-900 tracking-tight">berry</h1>
                     <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Hello, {activeProfile.displayName?.split(' ')[0] || 'User'}</p>
@@ -288,7 +279,7 @@ export default function App() {
               </header>
             )}
 
-            <main className="flex-1 overflow-y-auto relative bg-[#F5F5F5] pb-24 scrollbar-hide">
+            <main className="flex-1 overflow-y-auto relative bg-[#fbf9ee] pb-24 scrollbar-hide max-w-md mx-auto w-full">
               <AnimatePresence mode="wait">
                 {view === 'home' && (
                   <HomeView 
@@ -343,7 +334,7 @@ export default function App() {
 
             {/* Nav Bar only visible when not in onboarding/survey */}
             {view !== 'onboarding' && view !== 'survey_active' && (
-              <nav className="absolute bottom-3 left-4 right-4 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] px-2 py-1.5 flex justify-between items-center z-20 rounded-[2rem] border border-gray-50">
+              <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] px-2 py-1.5 flex justify-between items-center z-20 rounded-[2rem] border border-gray-50">
                 <div className="flex flex-1 justify-around items-center">
                   <NavItem icon={Home} label="Home" isActive={view === 'home'} onClick={() => setView('home')} />
                   <NavItem icon={ClipboardList} label="Answers" isActive={view === 'surveys'} onClick={() => setView('surveys')} />
@@ -366,7 +357,7 @@ export default function App() {
               initial={{ opacity: 0, y: -50, scale: 0.9 }}
               animate={{ opacity: 1, y: 20, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.9 }}
-              className="absolute top-0 left-4 right-4 bg-white text-gray-900 p-4 rounded-2xl shadow-lg z-50 flex items-start gap-3 border border-gray-100"
+              className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white text-gray-900 p-4 rounded-2xl shadow-lg z-50 flex items-start gap-3 border border-gray-100"
             >
               <div className="bg-secondary/20 p-2 rounded-full text-primary">
                 <CheckCircle2 size={20} />
@@ -379,7 +370,6 @@ export default function App() {
           )}
         </AnimatePresence>
 
-      </div>
     </div>
   );
 }
@@ -414,10 +404,9 @@ function ProminentNavItem({ isActive, onClick }: { isActive: boolean, onClick: (
            {/* Holographic effect simulation */}
            <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[radial-gradient(circle_at_center,_#fff_0%,_transparent_70%)] animate-pulse" />
            <img 
-             src="https://storage.googleapis.com/m-infra.appspot.com/v0/b/m-infra.appspot.com/o/zxrvbrecwreqepsdlvfu6m%2F1744626136746.png?alt=media&token=c191a45c-0994-469b-9860-249119619163" 
+             src={rewardsImg} 
              alt="Rewards" 
              className={`w-10 h-10 object-contain transition-all ${isActive ? 'scale-110' : 'grayscale opacity-70'}`}
-             referrerPolicy="no-referrer"
            />
         </div>
       </div>

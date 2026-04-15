@@ -1,11 +1,13 @@
-@import url('https://api.fontshare.com/v2/css?f[]=clash-grotesk@200,300,400,500,600,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Clash Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --color-primary: #4A1D3D;
   --color-secondary: #B76E79;
-  --color-accent: #7D3C5E; /* Lighter berry instead of green */
+  --color-accent: #7D3C5E;
+  --color-kinetic-berry: #B76E79;
+  --color-kinetic-cream: #fbf9ee;
 
   --animate-gradient: gradient-motion 5s ease infinite;
 
@@ -14,6 +16,12 @@
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
+}
+
+@utility btn-kinetic-base {
+  @apply px-8 py-3 rounded-lg border-2 border-black font-bold transition-all active:translate-y-1 active:shadow-none animate-gradient;
+  box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+  background-size: 200% 200%;
 }
 
 @layer utilities {
@@ -37,11 +45,19 @@
   .bg-size-200 {
     background-size: 200% 200%;
   }
+
+  .btn-kinetic-berry {
+    @apply btn-kinetic-base bg-gradient-to-r from-kinetic-berry via-accent to-kinetic-berry text-white hover:opacity-90;
+  }
+  
+  .btn-kinetic-white {
+    @apply btn-kinetic-base bg-gradient-to-r from-white via-gray-100 to-white text-black hover:bg-gray-50;
+  }
 }
 
 body {
-  font-family: "Clash Grotesk", sans-serif;
+  font-family: "Plus Jakarta Sans", sans-serif;
   -webkit-tap-highlight-color: transparent;
-  background-color: #0F1115; /* Dark background like image */
+  background-color: #0F1115;
   color: white;
 }
