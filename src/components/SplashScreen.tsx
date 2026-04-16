@@ -60,6 +60,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
                   src={logo2Img} 
                   alt="berry Logo" 
                   className="w-full h-full object-contain"
+                  referrerPolicy="no-referrer"
                 />
               </div>
               <motion.h1 

@@ -82,7 +82,7 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
           >
             <div className="text-center space-y-4">
               <div className="w-32 h-32 mx-auto">
-                <img src={logo2Img} alt="berry Logo" className="w-full h-full object-contain" />
+                <img src={logo2Img} alt="berry Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
               </div>
               <h1 className="text-5xl font-bold text-white tracking-tighter">berry</h1>
               <p className="text-gray-400 text-lg">Your opinions, harvested into rewards.</p>

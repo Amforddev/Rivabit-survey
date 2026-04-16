@@ -248,7 +248,7 @@ export default function App() {
             {view !== 'survey_active' && view !== 'profile-builder' && (
               <header className="bg-[#fbf9ee] px-6 py-2 flex justify-between items-center z-10 relative max-w-md mx-auto w-full">
                 <div className="flex items-center gap-2">
-                  <img src={logo2Img} alt="berry Logo" className="w-8 h-8 rounded-lg object-contain" />
+                  <img src={logo2Img} alt="berry Logo" className="w-8 h-8 rounded-lg object-contain" referrerPolicy="no-referrer" />
                   <div>
                     <h1 className="text-xl font-bold text-gray-900 tracking-tight">berry</h1>
                     <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Hello, {activeProfile.displayName?.split(' ')[0] || 'User'}</p>
@@ -414,6 +414,7 @@ function ProminentNavItem({ isActive, onClick }: { isActive: boolean, onClick: (
              src={rewardsImg} 
              alt="Rewards" 
              className={`w-11 h-11 object-contain transition-all ${isActive ? 'scale-110' : 'grayscale opacity-70'}`}
+             referrerPolicy="no-referrer"
            />
         </div>
       </div>

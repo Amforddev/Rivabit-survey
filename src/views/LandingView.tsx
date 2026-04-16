@@ -81,7 +81,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ setView }) => {
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 flex items-center justify-center">
-              <img src={logoImg} alt="berry Logo" className="w-full h-full object-contain" />
+              <img src={logoImg} alt="berry Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
             </div>
             <span className="text-2xl font-extrabold tracking-tighter">berry</span>
           </div>
@@ -176,6 +176,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ setView }) => {
                 src={heroImg} 
                 alt="Isometric Illustration" 
                 className="w-full h-auto"
+                referrerPolicy="no-referrer"
               />
             </div>
           </motion.div>
@@ -428,7 +429,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ setView }) => {
           <div className="space-y-6">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 flex items-center justify-center">
-                <img src={logoImg} alt="berry Logo" className="w-full h-full object-contain" />
+                <img src={logoImg} alt="berry Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
               </div>
               <span className="text-2xl font-extrabold tracking-tighter">berry</span>
             </div>
