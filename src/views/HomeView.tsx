@@ -16,91 +16,7 @@ interface HomeViewProps {
 
 const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, startSurvey, setView }) => {
   const availableSurveys = MOCK_SURVEYS.filter(s => !completedSurveys.includes(s.id));
-  const [showKycModal, setShowKycModal] = useState(false);
-  const [showPhoneModal, setShowPhoneModal] = useState(false);
-  const [kycLoading, setKycLoading] = useState(false);
-  const [phoneLoading, setPhoneLoading] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState(userProfile.phoneNumber || '');
-  const [otp, setOtp] = useState('');
-  const [phoneStep, setPhoneStep] = useState<'input' | 'verify'>('input');
   const [selectedSurvey, setSelectedSurvey] = useState<Survey | null>(null);
-
-  const handleKycVerification = () => {
-    setKycLoading(true);
-    // Mock 3rd party widget flow
-    setTimeout(async () => {
-      try {
-        await updateDoc(doc(db, 'users', userProfile.uid), {
-          kycVerified: true
-        });
-      } catch (e) {
-        console.error("Error verifying KYC", e);
-      }
-      setKycLoading(false);
-      setShowKycModal(false);
-    }, 2000);
-  };
-
-  const handlePhoneSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPhoneLoading(true);
-    setTimeout(() => {
-      setPhoneLoading(false);
-      setPhoneStep('verify');
-    }, 1000);
-  };
-
-  const handlePhoneVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPhoneLoading(true);
-    setTimeout(async () => {
-      try {
-        await updateDoc(doc(db, 'users', userProfile.uid), {
-          phoneNumber: phoneNumber,
-          phoneVerified: true
-        });
-      } catch (e) {
-        console.error("Error verifying phone", e);
-      }
-      setPhoneLoading(false);
-      setShowPhoneModal(false);
-      setPhoneStep('input');
-      setOtp('');
-    }, 1000);
-  };
-
-  const setupSteps = [
-    {
-      id: 'profile',
-      isCompleted: userProfile.profileCompleted,
-      action: () => setView('profile-builder'),
-      icon: <UserPlus size={20} />,
-      iconClass: 'bg-blue-100 text-blue-600',
-      title: 'Complete your profile',
-      subtitle: 'Earn 500 berries & unlock surveys'
-    },
-    {
-      id: 'phone',
-      isCompleted: (userProfile as any).phoneVerified,
-      action: () => setShowPhoneModal(true),
-      icon: <Icons.Phone size={20} />,
-      iconClass: 'bg-orange-100 text-orange-600',
-      title: 'Verify phone number',
-      subtitle: 'Secure your account'
-    },
-    {
-      id: 'kyc',
-      isCompleted: userProfile.kycVerified,
-      action: () => setShowKycModal(true),
-      icon: <ShieldAlert size={20} />,
-      iconClass: 'bg-red-100 text-red-600',
-      title: 'Verify your account',
-      subtitle: 'Required for withdrawals'
-    }
-  ];
-
-  const completedStepsCount = setupSteps.filter(s => s.isCompleted).length;
-  const nextIncompleteStep = setupSteps.find(s => !s.isCompleted);
 
   return (
     <motion.div 
@@ -110,38 +26,24 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
       className="p-6 space-y-8"
     >
       {/* Account Setup Steps */}
-      {nextIncompleteStep && (
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-gray-900 text-sm">Account Setup</h3>
-            <span className="text-xs font-semibold text-primary">{completedStepsCount}/3 Completed</span>
-          </div>
-          <div className="h-1.5 w-full bg-gray-100 rounded-full mb-4 overflow-hidden">
-            <motion.div 
-              className="h-full bg-primary" 
-              initial={{ width: 0 }}
-              animate={{ width: `${(completedStepsCount / 3) * 100}%` }}
-              transition={{ duration: 0.5 }}
-            />
-          </div>
-          <button 
-            onClick={nextIncompleteStep.action}
-            className="w-full bg-gray-50 border border-gray-100 p-3 rounded-xl flex items-center justify-between group hover:bg-gray-100 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${nextIncompleteStep.iconClass}`}>
-                {nextIncompleteStep.icon}
-              </div>
-              <div className="text-left">
-                <h4 className="font-bold text-gray-900 text-sm">{nextIncompleteStep.title}</h4>
-                <p className="text-xs text-gray-500">{nextIncompleteStep.subtitle}</p>
-              </div>
+      {!userProfile.profileCompleted && (
+        <button 
+          onClick={() => setView('profile-builder')}
+          className="w-full bg-white border border-gray-100 p-4 rounded-2xl flex items-center justify-between group hover:bg-gray-50 transition-colors shadow-sm"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-100 text-blue-600">
+              <UserPlus size={24} />
             </div>
-            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-gray-400 group-hover:text-primary transition-colors shadow-sm">
-              <Icons.ArrowRight size={16} />
+            <div className="text-left">
+              <h4 className="font-bold text-gray-900 text-base">Complete your profile</h4>
+              <p className="text-sm text-gray-500">Earn 500 berries & unlock surveys</p>
             </div>
-          </button>
-        </div>
+          </div>
+          <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 group-hover:text-primary transition-colors border border-gray-100">
+            <Icons.ArrowRight size={20} />
+          </div>
+        </button>
       )}
 
       {/* Hero Card */}
@@ -218,144 +120,7 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
         </div>
       </section>
 
-      {/* KYC Modal */}
       <AnimatePresence>
-        {showKycModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative overflow-hidden"
-            >
-              <div className="text-center space-y-4">
-                <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto">
-                  <ShieldAlert size={32} className="text-blue-500" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900">Identity Verification</h3>
-                <p className="text-gray-500 text-sm">
-                  We need to verify your identity before you can withdraw funds. This process is handled securely by our partner.
-                </p>
-                
-                <div className="pt-4 space-y-3">
-                  <button 
-                    onClick={handleKycVerification}
-                    disabled={kycLoading}
-                    className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-lg disabled:opacity-70 flex items-center justify-center gap-2"
-                  >
-                    {kycLoading ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Verifying...</span>
-                      </>
-                    ) : (
-                      'Start Verification'
-                    )}
-                  </button>
-                  <button 
-                    onClick={() => setShowKycModal(false)}
-                    disabled={kycLoading}
-                    className="w-full py-4 text-gray-500 font-semibold hover:bg-gray-50 rounded-2xl transition-colors"
-                  >
-                    Maybe Later
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-
-        {/* Phone Verification Modal */}
-        {showPhoneModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative overflow-hidden"
-            >
-              <button 
-                onClick={() => {
-                  setShowPhoneModal(false);
-                  setPhoneStep('input');
-                  setOtp('');
-                }}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-              >
-                <X size={20} />
-              </button>
-              
-              <div className="text-center space-y-4">
-                <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mx-auto">
-                  <Icons.Phone size={32} className="text-orange-500" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900">Verify Phone</h3>
-                <p className="text-gray-500 text-sm">
-                  {phoneStep === 'input' 
-                    ? "Enter your phone number to receive a verification code." 
-                    : `We've sent an SMS to ${phoneNumber}`}
-                </p>
-                
-                <div className="pt-4 space-y-3">
-                  {phoneStep === 'input' ? (
-                    <form onSubmit={handlePhoneSubmit} className="space-y-4">
-                      <input 
-                        type="tel" 
-                        placeholder="Enter phone number" 
-                        value={phoneNumber} 
-                        onChange={(e) => setPhoneNumber(e.target.value)} 
-                        className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 focus:ring-2 focus:ring-primary focus:outline-none" 
-                        required 
-                      />
-                      <button 
-                        type="submit"
-                        disabled={phoneLoading || !phoneNumber}
-                        className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-lg disabled:opacity-70 flex items-center justify-center gap-2"
-                      >
-                        {phoneLoading ? (
-                          <>
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Sending...</span>
-                          </>
-                        ) : (
-                          'Send Code'
-                        )}
-                      </button>
-                    </form>
-                  ) : (
-                    <form onSubmit={handlePhoneVerify} className="space-y-4">
-                      <input 
-                        type="text" 
-                        placeholder="Enter 6-digit code" 
-                        value={otp} 
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} 
-                        className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 focus:ring-2 focus:ring-primary focus:outline-none text-center tracking-widest text-lg" 
-                        required 
-                        minLength={6} 
-                        maxLength={6} 
-                      />
-                      <button 
-                        type="submit"
-                        disabled={phoneLoading || otp.length < 6}
-                        className="w-full bg-primary text-white py-4 rounded-2xl font-bold text-lg disabled:opacity-70 flex items-center justify-center gap-2"
-                      >
-                        {phoneLoading ? (
-                          <>
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Verifying...</span>
-                          </>
-                        ) : (
-                          'Verify'
-                        )}
-                      </button>
-                    </form>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-
         {selectedSurvey && (
           <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
             <motion.div 

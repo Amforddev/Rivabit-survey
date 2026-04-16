@@ -85,7 +85,8 @@ export const REWARD_CATEGORIES: RewardCategory[] = [
     iconName: 'Ticket',
     options: [
       { id: 'r1', title: '₦50,000 Weekly Draw', cost: 50, description: 'Draw on Friday. 1 Ticket.', status: 'Open' },
-      { id: 'r2', title: '₦200,000 Monthly Mega Draw', cost: 400, description: 'Draw at end of month. 10 Tickets.', status: 'Drawing Soon' }
+      { id: 'r2', title: '₦200,000 Monthly Mega Draw', cost: 400, description: 'Draw at end of month. 10 Tickets.', status: 'Drawing Soon' },
+      { id: 'r3', title: '₦100,000 Special Draw', cost: 100, description: 'Exclusive special draw.', status: 'Open' }
     ]
   }
 ];

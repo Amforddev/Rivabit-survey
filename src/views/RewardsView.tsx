@@ -65,7 +65,7 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
     >
       <div className="p-6 pb-2">
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">Rewards Store</h2>
-        <p className="text-gray-500 text-sm mb-6">Spend your Berry on awesome rewards.</p>
+        <p className="text-gray-500 text-sm mb-6">Spend your berries on awesome rewards.</p>
         
         {/* Horizontal Category Scroll */}
         <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-6 px-6">
@@ -103,12 +103,24 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
           >
             {category.options.map(option => {
               const canAfford = userProfile.berry >= option.cost;
-              const myTickets = redemptions.filter(r => r.rewardId === option.id);
+              let myTickets = redemptions.filter(r => r.rewardId === option.id);
+              
+              // Inject mock tickets for 'r3' to demonstrate the horizontal scroll UI
+              if (option.id === 'r3' && myTickets.length === 0) {
+                myTickets = Array.from({ length: 12 }, (_, i) => ({
+                  id: `mock-${i}`,
+                  userId: userProfile.uid,
+                  rewardId: 'r3',
+                  cost: 100,
+                  details: { ticketNumber: `#TKT-M${1000 + i}` },
+                  redeemedAt: null
+                }));
+              }
 
               return (
                 <div key={option.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3">
-                  <div className="flex justify-between items-start">
-                    <div>
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h4 className="font-medium text-gray-900 text-lg">{option.title}</h4>
                       </div>
@@ -119,23 +131,28 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
                             <Ticket size={14} />
                             <span>You have {myTickets.length} ticket{myTickets.length > 1 ? 's' : ''}</span>
                           </div>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {myTickets.map((t, idx) => {
-                              const tNum = t.details?.ticketNumber || `#TKT-${idx+1}`;
-                              return (
-                                <button 
-                                  key={idx} 
-                                  onClick={() => setSelectedTicket({
-                                    ticketNumber: tNum,
-                                    drawTitle: option.title,
-                                    date: new Date(t.redeemedAt?.toDate() || Date.now()).toLocaleDateString()
-                                  })}
-                                  className="text-xs font-mono bg-gray-50 border border-gray-200 px-2 py-1 rounded text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors cursor-pointer"
-                                >
-                                  {tNum}
-                                </button>
-                              );
-                            })}
+                          <div className="relative mt-2">
+                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide pr-8">
+                              {myTickets.map((t, idx) => {
+                                const tNum = t.details?.ticketNumber || `#TKT-${idx+1}`;
+                                return (
+                                  <button 
+                                    key={idx} 
+                                    onClick={() => setSelectedTicket({
+                                      ticketNumber: tNum,
+                                      drawTitle: option.title,
+                                      date: new Date(t.redeemedAt?.toDate?.() || Date.now()).toLocaleDateString()
+                                    })}
+                                    className="text-xs font-mono bg-gray-50 border border-gray-200 px-3 py-1.5 rounded text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors cursor-pointer shrink-0"
+                                  >
+                                    {tNum}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            {myTickets.length > 3 && (
+                              <div className="absolute right-0 top-0 bottom-2 w-16 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+                            )}
                           </div>
                           {/* Mock Winning Ticket Logic */}
                           {option.id === 'r1' && (
@@ -155,7 +172,7 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col items-end gap-2">
+                    <div className="flex flex-col items-end gap-2 shrink-0">
                       <div className="flex items-center gap-1 text-primary font-semibold bg-gray-100 px-2.5 py-1 rounded-lg">
                         <Coins size={16} />
                         {option.cost}
