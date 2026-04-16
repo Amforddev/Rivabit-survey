@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, CheckCircle2, Coins } from 'lucide-react';
 import { View, UserProfile } from '../types';
@@ -10,44 +10,111 @@ interface ProfileBuilderViewProps {
   userProfile: UserProfile;
 }
 
-const PROFILE_QUESTIONS = [
+const PROFILE_SECTIONS = [
   {
-    id: 'gender',
-    question: 'What is your gender?',
-    options: ['Male', 'Female', 'Non-binary', 'Prefer not to say']
-  },
-  {
-    id: 'age',
-    question: 'What is your age range?',
-    options: ['18-24', '25-34', '35-44', '45+']
+    id: 'occupation',
+    title: 'Occupation',
+    questions: [
+      {
+        id: 'employment',
+        question: 'What is your employment status?',
+        options: ['Employed full-time', 'Employed part-time', 'Self-employed', 'Unemployed', 'Student']
+      },
+      {
+        id: 'industry',
+        question: 'What industry do you work in?',
+        options: ['Technology', 'Healthcare', 'Education', 'Finance', 'Other']
+      }
+    ]
   },
   {
     id: 'shopping',
-    question: 'What are your primary shopping interests?',
-    options: ['Electronics', 'Fashion', 'Groceries', 'Home & Garden']
+    title: 'Shopping',
+    questions: [
+      {
+        id: 'shopping_frequency',
+        question: 'How often do you shop online?',
+        options: ['Weekly', 'Monthly', 'Rarely', 'Never']
+      },
+      {
+        id: 'shopping_category',
+        question: 'What is your primary shopping category?',
+        options: ['Electronics', 'Fashion', 'Groceries', 'Home & Garden']
+      }
+    ]
   },
   {
-    id: 'travel',
-    question: 'How often do you travel?',
-    options: ['Frequently', 'Occasionally', 'Rarely', 'Never']
+    id: 'language',
+    title: 'Language',
+    questions: [
+      {
+        id: 'primary_language',
+        question: 'What is your primary language?',
+        options: ['English', 'Spanish', 'French', 'Other']
+      },
+      {
+        id: 'fluency',
+        question: 'Are you fluent in any secondary languages?',
+        options: ['Yes', 'No']
+      }
+    ]
   }
 ];
 
 export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isFinished, setIsFinished] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`profile_progress_${userProfile.uid}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed) {
+          setCurrentSectionIndex(parsed.currentSectionIndex || 0);
+          setCurrentQuestionIndex(parsed.currentQuestionIndex || 0);
+          setAnswers(parsed.answers || {});
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load profile progress", e);
+    }
+    setIsLoaded(true);
+  }, [userProfile.uid]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      if (isFinished) {
+        localStorage.removeItem(`profile_progress_${userProfile.uid}`);
+      } else {
+        localStorage.setItem(`profile_progress_${userProfile.uid}`, JSON.stringify({
+          currentSectionIndex,
+          currentQuestionIndex,
+          answers
+        }));
+      }
+    }
+  }, [currentSectionIndex, currentQuestionIndex, answers, isFinished, isLoaded, userProfile.uid]);
+
+  const currentSection = PROFILE_SECTIONS[currentSectionIndex];
+  const currentQ = currentSection.questions[currentQuestionIndex];
 
   const handleOptionSelect = (option: string) => {
     setAnswers(prev => ({
       ...prev,
-      [PROFILE_QUESTIONS[currentStep].id]: option
+      [currentQ.id]: option
     }));
   };
 
   const handleNext = async () => {
-    if (currentStep < PROFILE_QUESTIONS.length - 1) {
-      setCurrentStep(prev => prev + 1);
+    if (currentQuestionIndex < currentSection.questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+    } else if (currentSectionIndex < PROFILE_SECTIONS.length - 1) {
+      setCurrentSectionIndex(prev => prev + 1);
+      setCurrentQuestionIndex(0);
     } else {
       try {
         await updateDoc(doc(db, 'users', userProfile.uid), {
@@ -62,6 +129,10 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
       }
     }
   };
+
+  if (!isLoaded) {
+    return null;
+  }
 
   if (isFinished) {
     return (
@@ -98,33 +169,34 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
     );
   }
 
-  const currentQ = PROFILE_QUESTIONS[currentStep];
-  const progressPercent = Math.round(((currentStep) / PROFILE_QUESTIONS.length) * 100);
-  const nextProgressPercent = Math.round(((currentStep + 1) / PROFILE_QUESTIONS.length) * 100);
+  const progressPercent = Math.round(((currentQuestionIndex) / currentSection.questions.length) * 100);
+  const nextProgressPercent = Math.round(((currentQuestionIndex + 1) / currentSection.questions.length) * 100);
+
+  const isLastQuestionOverall = currentSectionIndex === PROFILE_SECTIONS.length - 1 && currentQuestionIndex === currentSection.questions.length - 1;
 
   return (
     <div className="flex-1 bg-[#fbf9ee] flex flex-col p-6 max-w-md mx-auto overflow-y-auto scrollbar-hide w-full">
       <div className="pt-8 pb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Build your profile</h1>
-        <p className="text-gray-500 text-sm mb-6">Answer a few questions to get personalized surveys and earn your first 500 Berries.</p>
+        <div className="flex items-center gap-4 mb-8">
+          <span className="text-4xl font-bold text-[#8B319E]">{nextProgressPercent}%</span>
+          <div className="flex-1 h-8 bg-[#F8F9FA] rounded-md overflow-hidden">
+            <motion.div 
+              className="h-full bg-[#8B319E] rounded-md"
+              initial={{ width: `${progressPercent}%` }}
+              animate={{ width: `${nextProgressPercent}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+        </div>
         
-        <div className="flex items-center justify-between text-sm font-medium text-gray-500 mb-2">
-          <span className="font-bold text-gray-700">{nextProgressPercent}% Completed</span>
-          <span className="text-primary">{PROFILE_QUESTIONS.length - currentStep} remaining</span>
-        </div>
-        <div className="h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
-          <motion.div 
-            className="h-full bg-primary"
-            initial={{ width: `${progressPercent}%` }}
-            animate={{ width: `${nextProgressPercent}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
+        <p className="text-[#6B7280] text-center text-lg leading-relaxed mb-6">
+          Complete your <span className="font-bold text-[#374151]">{currentSection.title}</span> profile so we can more easily match you to studies that fit your lifestyle!
+        </p>
       </div>
 
       <div className="flex-1 flex flex-col justify-center">
         <motion.div 
-          key={currentStep}
+          key={`${currentSectionIndex}-${currentQuestionIndex}`}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
@@ -157,12 +229,9 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
         <button 
           onClick={handleNext}
           disabled={!answers[currentQ.id]}
-          className="w-full bg-accent text-white py-4 px-6 rounded-full font-semibold text-lg flex items-center justify-between transition-all hover:opacity-90 active:scale-[0.98] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed group"
+          className="w-full bg-[#8B319E] text-white py-4 px-6 rounded-2xl font-bold text-xl flex items-center justify-center transition-all hover:opacity-90 active:scale-[0.98] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span>{currentStep < PROFILE_QUESTIONS.length - 1 ? 'Next Question' : 'Finish Profile'}</span>
-          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-primary group-hover:translate-x-1 transition-transform">
-            <ArrowRight size={20} />
-          </div>
+          {isLastQuestionOverall ? 'Complete profile' : 'Next Question'}
         </button>
       </div>
     </div>

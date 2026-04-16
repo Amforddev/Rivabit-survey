@@ -43,8 +43,7 @@ export default function App() {
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
-      // For UI-only prototype, we don't force redirection to onboarding
-      // if the user is null, as we want to allow mock navigation.
+      // If the user signed in with real Firebase auth, redirect to home
       if (firebaseUser) {
         if (view === 'onboarding') setView('home');
       }
@@ -244,11 +243,9 @@ export default function App() {
 
         {view === 'onboarding' ? (
           <OnboardingView setView={setView} />
-        ) : view === 'profile-builder' ? (
-          <ProfileBuilderView setView={setView} userProfile={activeProfile} />
         ) : (
           <>
-            {view !== 'survey_active' && (
+            {view !== 'survey_active' && view !== 'profile-builder' && (
               <header className="bg-[#fbf9ee] px-6 py-2 flex justify-between items-center z-10 relative max-w-md mx-auto w-full">
                 <div className="flex items-center gap-2">
                   <img src={logo2Img} alt="berry Logo" className="w-8 h-8 rounded-lg object-contain" />
@@ -329,6 +326,14 @@ export default function App() {
                     redemptions={redemptions}
                     submissions={submissions}
                     showToast={showToast}
+                    setView={setView}
+                  />
+                )}
+                {view === 'profile-builder' && (
+                  <ProfileBuilderView 
+                    key="profile-builder"
+                    setView={setView} 
+                    userProfile={activeProfile} 
                   />
                 )}
               </AnimatePresence>
@@ -380,17 +385,17 @@ function NavItem({ icon: Icon, label, isActive, onClick, badge }: { icon: React.
   return (
     <button 
       onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-0.5 transition-all ${isActive ? 'text-primary scale-105' : 'text-gray-400 hover:text-gray-600'}`}
+      className={`flex flex-col items-center justify-center gap-1 transition-all ${isActive ? 'text-primary scale-110' : 'text-gray-400 hover:text-gray-600'}`}
     >
       <div className="relative">
-        <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
         {badge && (
-          <div className="absolute -top-1 -right-2 bg-[#E15A5A] text-white text-[7px] font-bold px-1 rounded-md min-w-[14px] h-[12px] flex items-center justify-center border border-white">
+          <div className="absolute -top-1 -right-2 bg-[#E15A5A] text-white text-[8px] font-bold px-1.5 rounded-md min-w-[16px] h-[14px] flex items-center justify-center border border-white">
             {badge}
           </div>
         )}
       </div>
-      <span className={`text-[9px] font-bold ${isActive ? 'text-primary' : 'text-gray-500'}`}>{label}</span>
+      <span className={`text-[10px] font-bold ${isActive ? 'text-primary' : 'text-gray-500'}`}>{label}</span>
     </button>
   );
 }
@@ -399,20 +404,20 @@ function ProminentNavItem({ isActive, onClick }: { isActive: boolean, onClick: (
   return (
     <button 
       onClick={onClick}
-      className="relative -top-4 flex flex-col items-center gap-0.5 group"
+      className="relative -top-5 flex flex-col items-center gap-1 group"
     >
-      <div className={`w-14 h-14 rounded-full bg-white border-2 ${isActive ? 'border-accent' : 'border-gray-100'} p-1 shadow-lg flex items-center justify-center transition-all active:scale-95 group-hover:shadow-xl`}>
+      <div className={`w-[60px] h-[60px] rounded-full bg-white border-2 ${isActive ? 'border-accent' : 'border-gray-100'} p-1 shadow-lg flex items-center justify-center transition-all active:scale-95 group-hover:shadow-xl`}>
         <div className="w-full h-full rounded-full bg-gradient-to-br from-[#FDECF2] via-[#E0C3FC] to-[#FDECF2] flex items-center justify-center overflow-hidden relative">
            {/* Holographic effect simulation */}
            <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[radial-gradient(circle_at_center,_#fff_0%,_transparent_70%)] animate-pulse" />
            <img 
              src={rewardsImg} 
              alt="Rewards" 
-             className={`w-10 h-10 object-contain transition-all ${isActive ? 'scale-110' : 'grayscale opacity-70'}`}
+             className={`w-11 h-11 object-contain transition-all ${isActive ? 'scale-110' : 'grayscale opacity-70'}`}
            />
         </div>
       </div>
-      <span className={`text-[9px] font-bold ${isActive ? 'text-primary' : 'text-gray-500'}`}>Rewards</span>
+      <span className={`text-[10px] font-bold ${isActive ? 'text-primary' : 'text-gray-500'}`}>Rewards</span>
     </button>
   );
 }

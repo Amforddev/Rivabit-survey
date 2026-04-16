@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Coins, Trophy, ChevronRight, LogOut, Copy, CheckCircle2, History, Edit2 } from 'lucide-react';
-import { UserProfile, Redemption, SurveySubmission } from '../types';
-import { logOut } from '../firebase';
+import { User, Coins, Trophy, ChevronRight, LogOut, Copy, CheckCircle2, History, Edit2, Gift } from 'lucide-react';
+import { View, UserProfile, Redemption, SurveySubmission } from '../types';
+import { logOut, auth } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -11,9 +11,10 @@ interface ProfileViewProps {
   redemptions: Redemption[];
   submissions: SurveySubmission[];
   showToast: (title: string, message: string) => void;
+  setView: (view: View) => void;
 }
 
-const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, submissions, showToast }) => {
+const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, submissions, showToast, setView }) => {
   const [copied, setCopied] = useState(false);
   const [showHistory, setShowHistory] = useState<'none' | 'surveys' | 'redemptions'>('none');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -40,7 +41,14 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
   };
 
   const handleLogout = async () => {
-    await logOut();
+    try {
+      if (auth.currentUser) {
+        await logOut();
+      }
+    } catch(e) {
+      console.error(e);
+    }
+    setView('onboarding');
   };
 
   const handleResetDemo = async () => {
@@ -221,12 +229,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
           </div>
           <div className="flex items-start gap-3">
             <div className="mt-0.5">
-              <img 
-                src="https://storage.googleapis.com/m-infra.appspot.com/v0/b/m-infra.appspot.com/o/zxrvbrecwreqepsdlvfu6m%2F1744626136746.png?alt=media&token=c191a45c-0994-469b-9860-249119619163" 
-                alt="Gift" 
-                className="w-4 h-4 object-contain"
-                referrerPolicy="no-referrer"
-              />
+              <Gift size={16} className="text-secondary" />
             </div>
             <div>
               <p className="text-xs text-gray-500">They get</p>
@@ -291,12 +294,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
           className="w-full flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <img 
-              src="https://storage.googleapis.com/m-infra.appspot.com/v0/b/m-infra.appspot.com/o/zxrvbrecwreqepsdlvfu6m%2F1744626136746.png?alt=media&token=c191a45c-0994-469b-9860-249119619163" 
-              alt="Rewards" 
-              className="w-6 h-6 object-contain"
-              referrerPolicy="no-referrer"
-            />
+            <Gift size={20} className="text-gray-600" />
             <span className="font-medium text-gray-900 text-base">Redemption History</span>
           </div>
           <ChevronRight size={20} className="text-gray-400" />

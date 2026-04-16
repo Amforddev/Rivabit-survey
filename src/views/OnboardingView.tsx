@@ -39,13 +39,21 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
     }, 1500);
   };
 
+  const handleSocialAuth = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setView('home');
+    }, 1500);
+  };
+
   const handleVerifyEmail = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
       setOtp('');
-      setStep('verify-phone');
+      setStep('success');
     }, 1000);
   };
 
@@ -98,7 +106,7 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <button 
-                  onClick={handleMockAuth}
+                  onClick={handleSocialAuth}
                   disabled={loading}
                   className="flex items-center justify-center gap-2 py-3 px-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors disabled:opacity-50"
                 >
@@ -106,7 +114,7 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
                   <span className="text-white font-medium">Google</span>
                 </button>
                 <button 
-                  onClick={handleMockAuth}
+                  onClick={handleSocialAuth}
                   disabled={loading}
                   className="flex items-center justify-center gap-2 py-3 px-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors disabled:opacity-50"
                 >
@@ -144,10 +152,6 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-white">Email</label>
                 <input type="email" placeholder="Enter email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary" required />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white">Phone Number</label>
-                <input type="tel" placeholder="Enter phone number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary" required />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-white">Password</label>
@@ -196,35 +200,6 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
               <div className="pt-8">
                 <button type="submit" disabled={loading || otp.length < 6} className="btn-primary group disabled:opacity-50">
                   <span>{loading ? 'Verifying...' : 'Verify Email'}</span>
-                  <div className="btn-icon group-hover:translate-x-1 transition-transform">
-                    <ArrowRight size={24} />
-                  </div>
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        );
-
-      case 'verify-phone':
-        return (
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="space-y-6"
-          >
-            <div className="space-y-2">
-              <h2 className="text-4xl font-bold text-white">Verify Phone</h2>
-              <p className="text-gray-400">We've sent an SMS to {phoneNumber || 'your phone'}</p>
-            </div>
-            <form className="space-y-4" onSubmit={handleVerifyPhone}>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white">SMS Code</label>
-                <input type="text" placeholder="Enter 6-digit code" value={otp} onChange={(e) => setOtp(e.target.value)} className="w-full bg-[#1C1F26] border-none rounded-2xl p-4 text-white focus:ring-2 focus:ring-secondary text-center tracking-widest text-lg" required minLength={6} maxLength={6} />
-              </div>
-              <div className="pt-8">
-                <button type="submit" disabled={loading || otp.length < 6} className="btn-primary group disabled:opacity-50">
-                  <span>{loading ? 'Verifying...' : 'Verify Phone'}</span>
                   <div className="btn-icon group-hover:translate-x-1 transition-transform">
                     <ArrowRight size={24} />
                   </div>
