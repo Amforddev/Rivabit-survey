@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Home, ClipboardList, User, Coins, Wifi, CheckCircle2, Wallet, Layers, CreditCard, MessageSquare } from 'lucide-react';
+import { Home, ClipboardList, User, Coins, Wifi, CheckCircle2, Wallet, Layers, CreditCard, MessageSquare, ArrowDown, AlertCircle } from 'lucide-react';
 import { doc, onSnapshot, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { db, auth, handleFirestoreError, OperationType } from './firebase';
@@ -15,7 +15,7 @@ import { OnboardingView } from './views/OnboardingView';
 import { ProfileBuilderView } from './views/ProfileBuilderView';
 import { WalletView } from './views/WalletView';
 import { SplashScreen } from './components/SplashScreen';
-import logo2Img from './assets/logo2.png';
+import logo2Img from './assets/logo2.jpg';
 import rewardsImg from './assets/rewards.png';
 
 export default function App() {
@@ -31,16 +31,36 @@ export default function App() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   
   const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
-  const [toast, setToast] = useState<{title: string, message: string} | null>(null);
+  const [toast, setToast] = useState<{title: string, message: string, type?: 'success'|'error'} | null>(null);
 
   // Tutorial State
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
 
+  // Flying Coins State
+  const [flyingCoins, setFlyingCoins] = useState<{ id: number, x: number, y: number }[]>([]);
+  const prevBerryRef = useRef(0);
+
+  // Pull to refresh State
+  const [refreshing, setRefreshing] = useState(false);
+  const [pullY, setPullY] = useState(0);
+  const pullStartY = useRef(0);
+
   const MOCK_UID = 'ui-demo-user-v2';
 
-  const showToast = (title: string, message: string) => {
-    setToast({ title, message });
+  const activeProfile = userProfile || {
+    uid: user?.uid || MOCK_UID,
+    email: user?.email || 'demo@example.com',
+    displayName: user?.displayName || 'Demo User',
+    photoURL: user?.photoURL || '',
+    berry: 0,
+    walletBalance: 0,
+    referralCode: (user?.uid || MOCK_UID).substring(0, 8).toUpperCase(),
+    createdAt: null as any
+  };
+
+  const showToast = (title: string, message: string, type: 'success'|'error' = 'success') => {
+    setToast({ title, message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -121,6 +141,58 @@ export default function App() {
     };
   }, [user]);
 
+  // Coin Animation Effect
+  useEffect(() => {
+    if (activeProfile.berry > prevBerryRef.current && prevBerryRef.current > 0) {
+      const diff = Math.min(activeProfile.berry - prevBerryRef.current, 10);
+      
+      const newCoins = Array.from({length: diff}).map((_, i) => ({
+        id: Date.now() + i,
+        x: window.innerWidth / 2 + (Math.random() * 60 - 30),
+        y: window.innerHeight / 2 + (Math.random() * 60 - 30)
+      }));
+      setFlyingCoins(prev => [...prev, ...newCoins]);
+      setTimeout(() => {
+        setFlyingCoins(prev => prev.filter(c => !newCoins.find(nc => nc.id === c.id)));
+      }, 1500);
+    }
+    prevBerryRef.current = activeProfile.berry;
+  }, [activeProfile.berry]);
+
+  // Pull to refresh handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const mainEl = document.getElementById('main-scroll-container');
+    if (mainEl && mainEl.scrollTop <= 0) {
+      pullStartY.current = e.touches[0].clientY;
+    } else {
+      pullStartY.current = 0;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (pullStartY.current > 0 && !refreshing) {
+      const y = e.touches[0].clientY;
+      const diff = y - pullStartY.current;
+      if (diff > 0) {
+        setPullY(Math.min(diff * 0.4, 80));
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (pullY > 60 && !refreshing) {
+      setRefreshing(true);
+      setTimeout(() => {
+        setRefreshing(false);
+        setPullY(0);
+        showToast('Refreshed!', 'You are up to date.', 'success');
+      }, 1200);
+    } else {
+      setPullY(0);
+    }
+    pullStartY.current = 0;
+  };
+
   // Tutorial Effect
   useEffect(() => {
     if (!loading && user && view === 'home' && !showSplash) {
@@ -191,9 +263,10 @@ export default function App() {
 
       setActiveSurvey(null);
       setView('home');
-      showToast('Survey Completed!', `You earned ${berryEarned} Berry.`);
-    } catch (err) {
+      showToast('Survey Completed!', `You earned ${berryEarned} Berry.`, 'success');
+    } catch (err: any) {
       handleFirestoreError(err, OperationType.WRITE, 'surveySubmissions');
+      showToast('Error', 'Failed to submit survey. Please try again.', 'error');
     }
   };
 
@@ -234,12 +307,13 @@ export default function App() {
           type: 'redemption'
         });
 
-        showToast('Redemption Successful!', `You redeemed ${option.title}.`);
-      } catch (err) {
+        showToast('Redemption Successful!', `You redeemed ${option.title}.`, 'success');
+      } catch (err: any) {
         handleFirestoreError(err, OperationType.WRITE, 'redemptions');
+        showToast('Error', 'Reward redemption failed. Try again later.', 'error');
       }
     } else {
-      showToast('Not enough Berry', `You need ${option.cost - activeProfile.berry} more Berry.`);
+      showToast('Not enough Berry', `You need ${option.cost - activeProfile.berry} more Berry.`, 'error');
     }
   };
 
@@ -272,17 +346,6 @@ export default function App() {
     );
   }
 
-  const activeProfile = userProfile || {
-    uid: user?.uid || MOCK_UID,
-    email: user?.email || 'demo@example.com',
-    displayName: user?.displayName || 'Demo User',
-    photoURL: user?.photoURL || '',
-    berry: 0,
-    walletBalance: 0,
-    referralCode: (user?.uid || MOCK_UID).substring(0, 8).toUpperCase(),
-    createdAt: null as any
-  };
-
   const completedSurveyIds = submissions.map(s => s.surveyId);
 
   return (
@@ -298,6 +361,26 @@ export default function App() {
           <OnboardingView setView={setView} />
         ) : (
           <>
+            {/* Flying Coins Overlay */}
+            <AnimatePresence>
+              {flyingCoins.map(coin => (
+                <motion.div
+                  key={coin.id}
+                  initial={{ x: coin.x, y: coin.y, scale: 0, opacity: 0 }}
+                  animate={{
+                    x: [coin.x, coin.x + (Math.random() * 100 - 50), window.innerWidth - 60],
+                    y: [coin.y, coin.y - 150, 40],
+                    scale: [0, 1.5, 0.5],
+                    opacity: [0, 1, 0]
+                  }}
+                  transition={{ duration: 1.2, ease: "easeInOut" }}
+                  className="fixed z-[1000] pointer-events-none text-[#F1B347]"
+                >
+                  <Coins size={36} className="fill-[#F5CD82] drop-shadow-lg" />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
             {view !== 'survey_active' && view !== 'profile-builder' && (
               <header className="bg-[#fbf9ee] px-6 py-2 flex justify-between items-center z-10 relative max-w-md mx-auto w-full">
                 <div className="flex items-center gap-2">
@@ -328,68 +411,98 @@ export default function App() {
               </header>
             )}
 
-            <main className="flex-1 overflow-y-auto relative bg-[#fbf9ee] pb-24 scrollbar-hide max-w-md mx-auto w-full">
-              <AnimatePresence mode="wait">
-                {view === 'home' && (
-                  <HomeView 
-                    key="home" 
-                    userProfile={activeProfile}
-                    startSurvey={startSurvey} 
-                    completedSurveys={completedSurveyIds}
-                    setView={setView}
-                  />
-                )}
-                {view === 'surveys' && (
-                  <SurveysView 
-                    key="surveys" 
-                    userProfile={activeProfile}
-                    startSurvey={startSurvey} 
-                    completedSurveys={completedSurveyIds} 
-                    setView={setView}
-                  />
-                )}
-                {view === 'wallet' && (
-                  <WalletView 
-                    key="wallet" 
-                    userProfile={activeProfile}
-                    setUserProfile={setUserProfile as any}
-                  />
-                )}
-                {view === 'survey_active' && activeSurvey && (
-                  <ActiveSurveyView 
-                    key="survey_active" 
-                    survey={activeSurvey} 
-                    onFinish={finishSurvey} 
-                    onCancel={() => setView('home')} 
-                  />
-                )}
-                {view === 'rewards' && (
-                  <RewardsView 
-                    key="rewards" 
-                    userProfile={activeProfile} 
-                    redeemReward={redeemReward} 
-                    redemptions={redemptions}
-                    showToast={showToast}
-                  />
-                )}
-                {view === 'profile' && (
-                  <ProfileView 
-                    key="profile" 
-                    userProfile={activeProfile}
-                    redemptions={redemptions}
-                    submissions={submissions}
-                    showToast={showToast}
-                    setView={setView}
-                  />
-                )}
-                {view === 'profile-builder' && (
-                  <ProfileBuilderView 
-                    key="profile-builder"
-                    setView={setView} 
-                    userProfile={activeProfile} 
-                  />
-                )}
-              </AnimatePresence>
+            <main 
+              id="main-scroll-container"
+              className="flex-1 overflow-y-auto relative bg-[#fbf9ee] pb-24 scrollbar-hide max-w-md mx-auto w-full"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {/* Pull To Refresh Indicator */}
+              <div 
+                className="absolute top-0 left-0 right-0 flex justify-center items-end pointer-events-none z-50 transition-transform"
+                style={{ height: 60, transform: `translateY(${pullY - 60}px)` }}
+              >
+                <div className="bg-white rounded-full p-2 shadow-md border border-gray-100 flex items-center justify-center text-primary">
+                  {refreshing ? (
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <ArrowDown 
+                      size={20} 
+                      className="text-gray-400" 
+                      style={{ transform: `rotate(${Math.min(pullY * 3, 180)}deg)` }} 
+                    />
+                  )}
+                </div>
+              </div>
+
+              <motion.div 
+                className="h-full"
+                animate={{ y: refreshing ? 60 : pullY }}
+                transition={refreshing ? { type: 'spring', stiffness: 300, damping: 20 } : { type: 'tween', duration: 0 }}
+              >
+                <AnimatePresence mode="wait">
+                  {view === 'home' && (
+                    <HomeView 
+                      key="home" 
+                      userProfile={activeProfile}
+                      startSurvey={startSurvey} 
+                      completedSurveys={completedSurveyIds}
+                      setView={setView}
+                    />
+                  )}
+                  {view === 'surveys' && (
+                    <SurveysView 
+                      key="surveys" 
+                      userProfile={activeProfile}
+                      startSurvey={startSurvey} 
+                      completedSurveys={completedSurveyIds} 
+                      setView={setView}
+                    />
+                  )}
+                  {view === 'wallet' && (
+                    <WalletView 
+                      key="wallet" 
+                      userProfile={activeProfile}
+                      setUserProfile={setUserProfile as any}
+                    />
+                  )}
+                  {view === 'survey_active' && activeSurvey && (
+                    <ActiveSurveyView 
+                      key="survey_active" 
+                      survey={activeSurvey} 
+                      onFinish={finishSurvey} 
+                      onCancel={() => setView('home')} 
+                    />
+                  )}
+                  {view === 'rewards' && (
+                    <RewardsView 
+                      key="rewards" 
+                      userProfile={activeProfile} 
+                      redeemReward={redeemReward} 
+                      redemptions={redemptions}
+                      showToast={showToast}
+                    />
+                  )}
+                  {view === 'profile' && (
+                    <ProfileView 
+                      key="profile" 
+                      userProfile={activeProfile}
+                      redemptions={redemptions}
+                      submissions={submissions}
+                      showToast={showToast}
+                      setView={setView}
+                    />
+                  )}
+                  {view === 'profile-builder' && (
+                    <ProfileBuilderView 
+                      key="profile-builder"
+                      setView={setView} 
+                      userProfile={activeProfile} 
+                    />
+                  )}
+                </AnimatePresence>
+              </motion.div>
             </main>
 
             {/* Nav Bar only visible when not in onboarding/survey */}
@@ -419,8 +532,8 @@ export default function App() {
               exit={{ opacity: 0, y: -20, scale: 0.9 }}
               className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white text-gray-900 p-4 rounded-2xl shadow-lg z-50 flex items-start gap-3 border border-gray-100"
             >
-              <div className="bg-secondary/20 p-2 rounded-full text-primary">
-                <CheckCircle2 size={20} />
+              <div className={`p-2 rounded-full ${toast.type === 'error' ? 'bg-red-100 text-red-500' : 'bg-secondary/20 text-primary'}`}>
+                {toast.type === 'error' ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
               </div>
               <div>
                 <h4 className="font-bold text-sm">{toast.title}</h4>
@@ -498,17 +611,33 @@ function NavItem({ icon: Icon, label, isActive, onClick, badge }: { icon: React.
   return (
     <button 
       onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-1 transition-all ${isActive ? 'text-primary scale-110' : 'text-gray-400 hover:text-gray-600'}`}
+      className={`relative flex flex-col items-center justify-center gap-1 transition-all px-3 py-2 z-10 ${isActive ? 'text-primary' : 'text-gray-400 hover:text-gray-600'}`}
     >
-      <div className="relative">
-        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} fill={isActive ? "currentColor" : "none"} />
+      {isActive && (
+        <motion.div
+          layoutId="nav_active_bg"
+          className="absolute inset-0 bg-primary/10 rounded-2xl -z-10"
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        />
+      )}
+      <motion.div 
+        animate={isActive ? { y: -2, scale: 1.1 } : { y: 0, scale: 1 }}
+        transition={{ type: "spring", stiffness: 400, damping: 15 }}
+        className="relative"
+      >
+        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} fill={isActive ? "currentColor" : "none"} className={isActive ? "drop-shadow-[0_2px_4px_rgba(202,63,115,0.3)]" : ""} />
         {badge && (
           <div className="absolute -top-1 -right-2 bg-[#E15A5A] text-white text-[8px] font-bold px-1.5 rounded-md min-w-[16px] h-[14px] flex items-center justify-center border border-white">
             {badge}
           </div>
         )}
-      </div>
-      <span className={`text-[10px] font-bold ${isActive ? 'text-primary' : 'text-gray-500'}`}>{label}</span>
+      </motion.div>
+      <motion.span 
+        animate={isActive ? { opacity: 1, scale: 1 } : { opacity: 0.8, scale: 0.95 }}
+        className={`text-[10px] font-bold ${isActive ? 'text-primary' : 'text-gray-500'}`}
+      >
+        {label}
+      </motion.span>
     </button>
   );
 }

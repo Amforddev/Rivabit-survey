@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Sparkles } from 'lucide-react';
-import logo2Img from '../assets/logo2.png';
+import logo2Img from '../assets/logo2.jpg';
 
 interface SplashScreenProps {
   onFinish: () => void;

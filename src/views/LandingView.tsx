@@ -2,8 +2,8 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, Smartphone, Globe, BarChart3, Users, ShieldCheck, Zap, PlayCircle, Apple, CheckCircle2, Coins, ClipboardList, CheckSquare, Wallet, Star, Heart, Target, TrendingUp } from 'lucide-react';
 import { View } from '../types';
-import heroImg from '../assets/hero.png';
-import logoImg from '../assets/logo.png';
+import heroImg from '../assets/hero.jpg';
+import logoImg from '../assets/logo.jpg';
 
 interface LandingViewProps {
   setView: (view: View) => void;
