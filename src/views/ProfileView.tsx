@@ -55,11 +55,19 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
     try {
       await updateDoc(doc(db, 'users', userProfile.uid), {
         kycVerified: false,
+        phoneVerified: false,
         profileCompleted: false,
+        profileData: {}, // Clear survey/profile answers
+        berry: 0,
+        walletBalance: 0,
+        referralCount: 0
       });
+      // Clear local stored profile builder progress
+      localStorage.removeItem(`profile_progress_${userProfile.uid}`);
       window.location.reload();
     } catch (e) {
       console.error("Failed to reset demo state", e);
+      showToast('Error', 'Failed to reset demo state');
     }
   };
 

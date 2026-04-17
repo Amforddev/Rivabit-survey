@@ -163,11 +163,11 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
 
   if (mode === 'all-complete') {
     return (
-      <div className="flex-1 bg-[#fbf9ee] flex flex-col items-center justify-center p-6 w-full">
+      <div className="w-full">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md bg-white rounded-3xl shadow-sm border border-gray-100 p-8 text-center"
+          className="w-full bg-white rounded-3xl shadow-sm border border-gray-100 p-8 text-center"
         >
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={48} className="text-primary" />
@@ -213,7 +213,7 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
 
   if (mode === 'overview') {
     return (
-      <div className="flex-1 bg-gray-50 flex flex-col w-full h-full relative">
+      <div className="w-full bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
         
         <div className="px-6 pt-6 pb-2">
            <p className="text-gray-500 text-sm leading-relaxed max-w-sm">
@@ -234,7 +234,7 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
             </div>
           </div>
           
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+          <div className="rounded-3xl p-6">
             <p className="text-gray-600 text-base leading-relaxed mb-6">
               Complete your <span className="font-bold text-primary">{currentSection.title}</span> profile so we can more easily match you to studies that fit your lifestyle!
             </p>
@@ -254,8 +254,8 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
 
   if (mode === 'section-complete') {
     return (
-      <div className="flex-1 bg-gray-50 flex flex-col p-8 w-full h-full text-center justify-center items-center">
-        <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-sm border border-gray-100">
+      <div className="w-full text-center p-6">
+        <div className="bg-white w-full rounded-[2rem] p-8 shadow-sm border border-gray-100">
           <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={40} />
           </div>
@@ -320,8 +320,8 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
   };
 
   return (
-    <div className="flex-1 bg-gray-50 flex flex-col w-full h-full relative">
-      <div className="flex justify-between items-center py-5 px-6 border-b border-gray-100 bg-white z-10 shadow-sm rounded-b-3xl">
+    <div className="w-full bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-xl font-bold text-gray-900 truncate pr-4">{currentSection.title}</h1>
         <div className="flex items-center gap-3">
           <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden shrink-0 flex items-center relative shadow-inner">
@@ -335,13 +335,13 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
         </div>
       </div>
 
-      <div className="p-6 flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto">
         <motion.div 
           key={`${currentSectionIndex}-${currentQuestionIndex}`}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100"
+          className="p-1"
         >
           <p className="text-lg font-bold text-gray-900 mb-6 flex items-start gap-1">
              <span className="text-primary mt-1">*</span> {currentQ.question}

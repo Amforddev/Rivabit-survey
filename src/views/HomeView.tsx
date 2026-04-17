@@ -6,6 +6,7 @@ import { Survey, RewardCategory, UserProfile } from '../types';
 import { MOCK_SURVEYS, REWARD_CATEGORIES } from '../data';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { ProfileBuilderView } from './ProfileBuilderView';
 
 interface HomeViewProps {
   userProfile: UserProfile;
@@ -25,27 +26,6 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
       exit={{ opacity: 0, x: 20 }}
       className="p-6 space-y-8"
     >
-      {/* Account Setup Steps */}
-      {!userProfile.profileCompleted && (
-        <button 
-          onClick={() => setView('profile-builder')}
-          className="w-full bg-white border border-gray-100 p-4 rounded-2xl flex items-center justify-between group hover:bg-gray-50 transition-colors shadow-sm"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-blue-100 text-blue-600">
-              <UserPlus size={24} />
-            </div>
-            <div className="text-left">
-              <h4 className="font-bold text-gray-900 text-base">Complete your profile</h4>
-              <p className="text-sm text-gray-500">Earn 500 berries & unlock surveys</p>
-            </div>
-          </div>
-          <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 group-hover:text-primary transition-colors border border-gray-100">
-            <Icons.ArrowRight size={20} />
-          </div>
-        </button>
-      )}
-
       {/* Hero Card */}
       <div className="bg-gradient-to-br from-primary via-accent to-primary animate-gradient bg-size-200 rounded-3xl p-6 text-white shadow-md relative overflow-hidden">
         <h2 className="font-medium mb-1 text-gray-200">Welcome back, {userProfile.displayName?.split(' ')[0] || 'User'}!</h2>
@@ -64,37 +44,31 @@ const HomeView: React.FC<HomeViewProps> = ({ userProfile, completedSurveys, star
         </button>
       </div>
 
-      {/* Featured Surveys */}
+      {/* Profile Builder or Available Surveys */}
       <section>
-        <div className="flex justify-between items-end mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Available Surveys</h3>
-        </div>
-        <div className="space-y-3">
-          {!userProfile.profileCompleted ? (
-            <div className="bg-white p-6 rounded-2xl text-center shadow-sm border border-gray-100 flex flex-col items-center">
-              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 mb-3">
-                <Lock size={24} />
-              </div>
-              <h4 className="font-bold text-gray-900 mb-1">Surveys Locked</h4>
-              <p className="text-sm text-gray-500 mb-4">Complete your profile to unlock and start earning rewards.</p>
-              <button 
-                onClick={() => setView('profile-builder')}
-                className="bg-primary text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity"
-              >
-                Complete Profile
-              </button>
+        {!userProfile.profileCompleted ? (
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+             <ProfileBuilderView setView={setView} userProfile={userProfile} />
+          </div>
+        ) : (
+          <>
+            <div className="flex justify-between items-end mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Available Surveys</h3>
             </div>
-          ) : availableSurveys.length > 0 ? (
-            availableSurveys.slice(0, 2).map(survey => (
-              <SurveyCard key={survey.id} survey={survey} onClick={() => setSelectedSurvey(survey)} />
-            ))
-          ) : (
-            <div className="bg-white p-6 rounded-2xl text-center shadow-sm border border-gray-100">
-              <CheckCircle2 className="mx-auto text-primary mb-2" size={40} />
-              <p className="text-gray-900 font-medium text-lg">You're all caught up!</p>
+            <div className="space-y-3">
+               {availableSurveys.length > 0 ? (
+                  availableSurveys.slice(0, 2).map(survey => (
+                    <SurveyCard key={survey.id} survey={survey} onClick={() => setSelectedSurvey(survey)} />
+                  ))
+                ) : (
+                  <div className="bg-white p-6 rounded-2xl text-center shadow-sm border border-gray-100">
+                    <CheckCircle2 className="mx-auto text-primary mb-2" size={40} />
+                    <p className="text-gray-900 font-medium text-lg">You're all caught up!</p>
+                  </div>
+                )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </section>
 
       {/* Quick Rewards */}

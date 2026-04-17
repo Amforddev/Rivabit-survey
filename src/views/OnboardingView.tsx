@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ChevronLeft } from 'lucide-react';
 import { View } from '../types';
-import logo2Img from '../assets/logo.png';
+import logo2Img from '../assets/logo2.png';
 
 type AuthStep = 'welcome' | 'signup' | 'verify-email' | 'verify-phone' | 'success' | 'signin' | 'forgot';
 
