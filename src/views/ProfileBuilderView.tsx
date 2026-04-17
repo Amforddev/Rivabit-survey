@@ -214,24 +214,6 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
   if (mode === 'overview') {
     return (
       <div className="flex-1 bg-gray-50 flex flex-col w-full h-full relative">
-        <div className="bg-white px-6 pt-6 pb-6 border-b border-gray-100 flex items-center justify-between rounded-b-3xl shadow-sm z-10">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 text-gray-800 font-bold text-lg">
-              You have <Coins className="text-primary fill-primary/20" size={22} /> {currentBerries} berries
-            </div>
-            <div className="flex items-center gap-2 mt-2 w-[220px]">
-               <div className="h-4 w-full bg-gray-100 rounded-full overflow-hidden flex border border-gray-200 shadow-inner">
-                  <div className="bg-primary h-full rounded-full" style={{ width: `${pointsProgress}%` }}></div>
-               </div>
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-gray-500 font-semibold text-xs uppercase tracking-wider">Redeem at:</span>
-            <div className="border border-gray-200 rounded-2xl px-3 py-1.5 bg-gray-50 flex items-center gap-1.5 font-bold text-gray-700 shadow-sm">
-               <Coins className="text-gray-400" size={16} /> 200
-            </div>
-          </div>
-        </div>
         
         <div className="px-6 pt-6 pb-2">
            <p className="text-gray-500 text-sm leading-relaxed max-w-sm">
