@@ -213,15 +213,13 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
 
   if (mode === 'overview') {
     return (
-      <div className="w-full bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+      <div className="w-full bg-white rounded-3xl p-4 shadow-sm border border-gray-100">
         
-        <div className="px-6 pt-6 pb-2">
-           <p className="text-gray-500 text-sm leading-relaxed max-w-sm">
-             Take surveys, rack up berries, and unlock your choice of rewards!
-           </p>
+        <div className="px-2 pt-2 pb-2">
+           <h2 className="text-lg font-bold text-gray-900">My profile</h2>
         </div>
         
-        <div className="p-6">
+        <div className="p-2">
           <div className="flex items-center gap-4 mb-6">
             <span className="text-4xl font-extrabold text-primary">{overallProgress}%</span>
             <div className="flex-1 h-6 bg-white rounded-full w-full shadow-inner border border-gray-100 overflow-hidden p-1">
@@ -234,7 +232,7 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
             </div>
           </div>
           
-          <div className="rounded-3xl p-6">
+          <div className="rounded-2xl p-2">
             <p className="text-gray-600 text-base leading-relaxed mb-6">
               Complete your <span className="font-bold text-primary">{currentSection.title}</span> profile so we can more easily match you to studies that fit your lifestyle!
             </p>
