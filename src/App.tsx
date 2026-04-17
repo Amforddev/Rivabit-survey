@@ -33,6 +33,10 @@ export default function App() {
   const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
   const [toast, setToast] = useState<{title: string, message: string} | null>(null);
 
+  // Tutorial State
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+
   const MOCK_UID = 'ui-demo-user-v2';
 
   const showToast = (title: string, message: string) => {
@@ -116,6 +120,55 @@ export default function App() {
       unsubNotif();
     };
   }, [user]);
+
+  // Tutorial Effect
+  useEffect(() => {
+    if (!loading && user && view === 'home' && !showSplash) {
+      const hasSeenTutorial = localStorage.getItem('tutorialCompleted');
+      if (!hasSeenTutorial) {
+        const timer = setTimeout(() => {
+          setShowTutorial(true);
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [loading, user, view, showSplash]);
+
+  const tutorialSteps = [
+    {
+      title: "Welcome to berry! 🍓",
+      content: "Let's take a quick tour to help you get started.",
+      placement: "center"
+    },
+    {
+      title: "Answer & Earn",
+      content: "Take surveys and complete profiling to earn berries.",
+      placement: "nav-answer"
+    },
+    {
+      title: "Claim Rewards",
+      content: "Redeem your hard-earned berries for amazing prizes and cash.",
+      placement: "nav-rewards"
+    },
+    {
+      title: "Your Wallet",
+      content: "Track your cash, manage your earnings, and make withdrawals.",
+      placement: "nav-wallet"
+    }
+  ];
+
+  const completeTutorial = () => {
+    setShowTutorial(false);
+    localStorage.setItem('tutorialCompleted', 'true');
+  };
+
+  const nextTutorialStep = () => {
+    if (tutorialStep < tutorialSteps.length - 1) {
+      setTutorialStep(prev => prev + 1);
+    } else {
+      completeTutorial();
+    }
+  };
 
   const startSurvey = (survey: Survey) => {
     setActiveSurvey(survey);
@@ -377,6 +430,66 @@ export default function App() {
           )}
         </AnimatePresence>
 
+        {/* Tutorial Overlay */}
+        <AnimatePresence>
+          {showTutorial && (
+            <div className="fixed inset-0 z-[300] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="absolute inset-0 max-w-md mx-auto pointer-events-none flex items-center justify-center">
+                <motion.div
+                  key={tutorialStep}
+                  className={`absolute bg-white text-gray-900 p-6 rounded-3xl shadow-2xl w-[90%] pointer-events-auto border-2 border-primary/20 ${
+                    tutorialSteps[tutorialStep].placement === 'center' ? 'top-1/3 left-1/2 -translate-x-1/2' :
+                    tutorialSteps[tutorialStep].placement === 'nav-answer' ? 'bottom-[100px] left-8' :
+                    tutorialSteps[tutorialStep].placement === 'nav-rewards' ? 'bottom-[120px] left-1/2 -translate-x-1/2' :
+                    tutorialSteps[tutorialStep].placement === 'nav-wallet' ? 'bottom-[100px] right-8' : ''
+                  }`}
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+                >
+                  {/* Arrow Pointers */}
+                  {tutorialSteps[tutorialStep].placement === 'nav-answer' && (
+                    <div className="absolute -bottom-3 left-[15%] w-6 h-6 bg-white rotate-45 border-b-2 border-r-2 border-primary/20"></div>
+                  )}
+                  {tutorialSteps[tutorialStep].placement === 'nav-rewards' && (
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-white rotate-45 border-b-2 border-r-2 border-primary/20"></div>
+                  )}
+                  {tutorialSteps[tutorialStep].placement === 'nav-wallet' && (
+                    <div className="absolute -bottom-3 right-[15%] w-6 h-6 bg-white rotate-45 border-b-2 border-r-2 border-primary/20"></div>
+                  )}
+
+                  <h3 className="font-black text-xl mb-3 text-primary">{tutorialSteps[tutorialStep].title}</h3>
+                  <p className="text-sm text-gray-600 mb-8 font-medium leading-relaxed">
+                    {tutorialSteps[tutorialStep].content}
+                  </p>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-2">
+                      {tutorialSteps.map((_, idx) => (
+                        <div 
+                          key={idx} 
+                          className={`h-2 rounded-full transition-all ${idx === tutorialStep ? 'w-6 bg-primary' : 'w-2 bg-gray-200'}`}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex gap-4 items-center">
+                      <button onClick={completeTutorial} className="text-gray-400 text-sm font-bold hover:text-gray-600 transition-colors">
+                        Skip
+                      </button>
+                      <button 
+                        onClick={nextTutorialStep}
+                        className="bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-[0_4px_14px_0_rgba(202,63,115,0.39)] hover:bg-primary/90 transition-all hover:scale-105 active:scale-95"
+                      >
+                        {tutorialStep === tutorialSteps.length - 1 ? 'Got it!' : 'Next'}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          )}
+        </AnimatePresence>
+
     </div>
   );
 }
@@ -388,7 +501,7 @@ function NavItem({ icon: Icon, label, isActive, onClick, badge }: { icon: React.
       className={`flex flex-col items-center justify-center gap-1 transition-all ${isActive ? 'text-primary scale-110' : 'text-gray-400 hover:text-gray-600'}`}
     >
       <div className="relative">
-        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} fill={isActive ? "currentColor" : "none"} />
         {badge && (
           <div className="absolute -top-1 -right-2 bg-[#E15A5A] text-white text-[8px] font-bold px-1.5 rounded-md min-w-[16px] h-[14px] flex items-center justify-center border border-white">
             {badge}

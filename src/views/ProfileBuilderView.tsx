@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { ArrowRight, CheckCircle2, Coins } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ArrowRight, CheckCircle2, Coins, User as UserIcon } from 'lucide-react';
 import { View, UserProfile } from '../types';
 import { doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -17,13 +17,23 @@ const PROFILE_SECTIONS = [
     questions: [
       {
         id: 'employment',
-        question: 'What is your employment status?',
-        options: ['Employed full-time', 'Employed part-time', 'Self-employed', 'Unemployed', 'Student']
+        question: 'What is your current employment status?',
+        options: ['Employed full-time', 'Employed part-time', 'Self-employed', 'Unemployed but looking for a job', 'Student']
       },
       {
         id: 'industry',
-        question: 'What industry do you work in?',
-        options: ['Technology', 'Healthcare', 'Education', 'Finance', 'Other']
+        question: 'In which industry do you work?',
+        options: ['Technology', 'Finance', 'General Management', 'Engineering', 'Manufacturing', 'Other']
+      },
+      {
+        id: 'job_role',
+        question: 'What corresponds best to your job role?',
+        options: ['C-Level / Executive', 'Senior Management', 'Middle Management', 'Entry Level / Staff', 'Freelancer', 'Other']
+      },
+      {
+        id: 'company_size',
+        question: 'How many employees work at your company?',
+        options: ['1-10', '11-50', '51-200', '201-500', '500+']
       }
     ]
   },
@@ -38,8 +48,18 @@ const PROFILE_SECTIONS = [
       },
       {
         id: 'shopping_category',
-        question: 'What is your primary shopping category?',
-        options: ['Electronics', 'Fashion', 'Groceries', 'Home & Garden']
+        question: 'What do you buy most often online?',
+        options: ['Electronics & Gadgets', 'Clothing & Fashion', 'Groceries & Food', 'Home & Garden', 'Digital Services']
+      },
+      {
+        id: 'payment_method',
+        question: 'What is your preferred payment method?',
+        options: ['Credit/Debit Card', 'Bank Transfer', 'Mobile Money', 'Crypto', 'Cash on Delivery']
+      },
+      {
+        id: 'monthly_budget',
+        question: 'Estimated monthly online shopping budget?',
+        options: ['Under ₦10,000', '₦10,000 - ₦50,000', '₦50,000 - ₦200,000', 'Over ₦200,000']
       }
     ]
   },
@@ -50,12 +70,48 @@ const PROFILE_SECTIONS = [
       {
         id: 'primary_language',
         question: 'What is your primary language?',
-        options: ['English', 'Spanish', 'French', 'Other']
+        options: ['English', 'Spanish', 'French', 'Hausa', 'Yoruba', 'Igbo', 'Other']
       },
       {
         id: 'fluency',
         question: 'Are you fluent in any secondary languages?',
         options: ['Yes', 'No']
+      },
+      {
+        id: 'english_reading',
+        question: 'How would you rate your English reading proficiency?',
+        options: ['Native/Bilingual', 'Advanced', 'Intermediate', 'Beginner']
+      },
+      {
+        id: 'english_writing',
+        question: 'How would you rate your English writing proficiency?',
+        options: ['Native/Bilingual', 'Advanced', 'Intermediate', 'Beginner']
+      }
+    ]
+  },
+  {
+    id: 'health',
+    title: 'Health & Lifestyle',
+    questions: [
+      {
+        id: 'long_term_health',
+        question: 'Do you have any long-term health conditions?',
+        options: ['Yes', 'No', 'Prefer not to say']
+      },
+      {
+        id: 'wear_glasses',
+        question: 'Do you wear glasses or contact lenses?',
+        options: ['Yes', 'No']
+      },
+      {
+        id: 'diet',
+        question: 'Which best describes your diet?',
+        options: ['Omnivore', 'Vegetarian', 'Vegan', 'Pescetarian', 'Other']
+      },
+      {
+        id: 'exercise',
+        question: 'How often do you exercise?',
+        options: ['Daily', '3-4 times a week', '1-2 times a week', 'Rarely', 'Never']
       }
     ]
   }
@@ -65,7 +121,9 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [isFinished, setIsFinished] = useState(false);
+  
+  // mode: 'overview' | 'question' | 'section-complete' | 'all-complete'
+  const [mode, setMode] = useState<'overview' | 'question' | 'section-complete' | 'all-complete'>('overview');
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -77,6 +135,7 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
           setCurrentSectionIndex(parsed.currentSectionIndex || 0);
           setCurrentQuestionIndex(parsed.currentQuestionIndex || 0);
           setAnswers(parsed.answers || {});
+          setMode(parsed.mode || 'overview');
         }
       }
     } catch (e) {
@@ -87,54 +146,22 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
 
   useEffect(() => {
     if (isLoaded) {
-      if (isFinished) {
+      if (mode === 'all-complete') {
         localStorage.removeItem(`profile_progress_${userProfile.uid}`);
       } else {
         localStorage.setItem(`profile_progress_${userProfile.uid}`, JSON.stringify({
           currentSectionIndex,
           currentQuestionIndex,
-          answers
+          answers,
+          mode
         }));
       }
     }
-  }, [currentSectionIndex, currentQuestionIndex, answers, isFinished, isLoaded, userProfile.uid]);
+  }, [currentSectionIndex, currentQuestionIndex, answers, mode, isLoaded, userProfile.uid]);
 
-  const currentSection = PROFILE_SECTIONS[currentSectionIndex];
-  const currentQ = currentSection.questions[currentQuestionIndex];
+  if (!isLoaded) return null;
 
-  const handleOptionSelect = (option: string) => {
-    setAnswers(prev => ({
-      ...prev,
-      [currentQ.id]: option
-    }));
-  };
-
-  const handleNext = async () => {
-    if (currentQuestionIndex < currentSection.questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-    } else if (currentSectionIndex < PROFILE_SECTIONS.length - 1) {
-      setCurrentSectionIndex(prev => prev + 1);
-      setCurrentQuestionIndex(0);
-    } else {
-      try {
-        await updateDoc(doc(db, 'users', userProfile.uid), {
-          berry: increment(500),
-          profileCompleted: true,
-          profileData: answers
-        });
-        setIsFinished(true);
-      } catch (e) {
-        console.error("Failed to complete profile", e);
-        setIsFinished(true); // Still show success screen for UX
-      }
-    }
-  };
-
-  if (!isLoaded) {
-    return null;
-  }
-
-  if (isFinished) {
+  if (mode === 'all-complete') {
     return (
       <div className="flex-1 bg-[#fbf9ee] flex flex-col items-center justify-center p-6 w-full">
         <motion.div 
@@ -169,40 +196,174 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
     );
   }
 
-  const progressPercent = Math.round(((currentQuestionIndex) / currentSection.questions.length) * 100);
-  const nextProgressPercent = Math.round(((currentQuestionIndex + 1) / currentSection.questions.length) * 100);
+  const currentSection = PROFILE_SECTIONS[currentSectionIndex];
+  
+  // Overall progress logic: starts from 0. Each section contributes equally.
+  const totalSections = PROFILE_SECTIONS.length;
+  // If we've completed sections this session, that counts.
+  // The first section starts overall space at 0%. When 1 is done, it's (1/3)*100%.
+  const completedSectionsRatio = currentSectionIndex / totalSections;
+  const overallProgress = Math.round(completedSectionsRatio * 100);
+  const prevOverallProgress = currentSectionIndex > 0 ? Math.round(((currentSectionIndex - 1) / totalSections) * 100) : 0;
 
-  const isLastQuestionOverall = currentSectionIndex === PROFILE_SECTIONS.length - 1 && currentQuestionIndex === currentSection.questions.length - 1;
+  // Calculate points bar (assuming max 200 points for visually pleasing bar like screenshot)
+  const currentBerries = userProfile.berry || 0;
+  const maxBerries = 200; 
+  const pointsProgress = Math.min((currentBerries / maxBerries) * 100, 100);
 
-  return (
-    <div className="flex-1 bg-[#fbf9ee] flex flex-col p-6 max-w-md mx-auto overflow-y-auto scrollbar-hide w-full">
-      <div className="pt-8 pb-6">
-        <div className="flex items-center gap-4 mb-8">
-          <span className="text-4xl font-bold text-[#8B319E]">{nextProgressPercent}%</span>
-          <div className="flex-1 h-8 bg-[#F8F9FA] rounded-md overflow-hidden">
-            <motion.div 
-              className="h-full bg-[#8B319E] rounded-md"
-              initial={{ width: `${progressPercent}%` }}
-              animate={{ width: `${nextProgressPercent}%` }}
-              transition={{ duration: 0.3 }}
-            />
+  if (mode === 'overview') {
+    return (
+      <div className="flex-1 bg-gray-50 flex flex-col w-full h-full relative">
+        <div className="bg-white px-6 pt-6 pb-6 border-b border-gray-100 flex items-center justify-between rounded-b-3xl shadow-sm z-10">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 text-gray-800 font-bold text-lg">
+              You have <Coins className="text-primary fill-primary/20" size={22} /> {currentBerries} berries
+            </div>
+            <div className="flex items-center gap-2 mt-2 w-[220px]">
+               <div className="h-4 w-full bg-gray-100 rounded-full overflow-hidden flex border border-gray-200 shadow-inner">
+                  <div className="bg-primary h-full rounded-full" style={{ width: `${pointsProgress}%` }}></div>
+               </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-gray-500 font-semibold text-xs uppercase tracking-wider">Redeem at:</span>
+            <div className="border border-gray-200 rounded-2xl px-3 py-1.5 bg-gray-50 flex items-center gap-1.5 font-bold text-gray-700 shadow-sm">
+               <Coins className="text-gray-400" size={16} /> 200
+            </div>
           </div>
         </div>
         
-        <p className="text-[#6B7280] text-center text-lg leading-relaxed mb-6">
-          Complete your <span className="font-bold text-[#374151]">{currentSection.title}</span> profile so we can more easily match you to studies that fit your lifestyle!
-        </p>
+        <div className="px-6 pt-6 pb-2">
+           <p className="text-gray-500 text-sm leading-relaxed max-w-sm">
+             Take surveys, rack up berries, and unlock your choice of rewards!
+           </p>
+        </div>
+        
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <span className="text-4xl font-extrabold text-primary">{overallProgress}%</span>
+            <div className="flex-1 h-6 bg-white rounded-full w-full shadow-inner border border-gray-100 overflow-hidden p-1">
+              <motion.div 
+                className="h-full bg-primary rounded-full"
+                initial={{ width: `${prevOverallProgress}%` }}
+                animate={{ width: `${overallProgress}%` }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+            <p className="text-gray-600 text-base leading-relaxed mb-6">
+              Complete your <span className="font-bold text-primary">{currentSection.title}</span> profile so we can more easily match you to studies that fit your lifestyle!
+            </p>
+            
+            <button 
+              onClick={() => setMode('question')}
+              className="w-full bg-primary text-white py-4 rounded-full font-bold text-lg flex items-center justify-center transition-all hover:opacity-90 active:scale-[0.98] shadow-md group"
+            >
+              <span>Complete Profile</span>
+              <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === 'section-complete') {
+    return (
+      <div className="flex-1 bg-gray-50 flex flex-col p-8 w-full h-full text-center justify-center items-center">
+        <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-sm border border-gray-100">
+          <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle2 size={40} />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Great Job!</h2>
+          <p className="text-gray-500 mb-8 max-w-[250px] mx-auto">Your <span className="font-bold text-gray-700">{currentSection.title}</span> profile is complete.</p>
+          
+          <div className="space-y-3">
+            <button 
+              onClick={async () => {
+                 if (currentSectionIndex < PROFILE_SECTIONS.length - 1) {
+                   setCurrentSectionIndex(prev => prev + 1);
+                   setCurrentQuestionIndex(0);
+                   setMode('overview');
+                 } else {
+                   try {
+                     await updateDoc(doc(db, 'users', userProfile.uid), {
+                       berry: increment(500),
+                       profileCompleted: true,
+                       profileData: answers
+                     });
+                   } catch (e) {
+                     console.error("Failed to complete profile", e);
+                   }
+                   setMode('all-complete');
+                 }
+              }}
+              className="w-full bg-primary text-white py-3.5 px-6 rounded-full font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all"
+            >
+              Continue to Next Category
+            </button>
+
+            <button 
+              onClick={() => setView('home')}
+              className="w-full bg-gray-100 text-gray-600 py-3.5 px-6 rounded-full font-semibold hover:bg-gray-200 active:scale-[0.98] transition-all"
+            >
+              Save and Return Later
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- mode === 'question' ---
+  const currentQ = currentSection.questions[currentQuestionIndex];
+  
+  // Section progress logic: starts from 0%, moves to 100% when all questions are answered or skipped (on completion)
+  // At Q1 out of 2, it is 0%. At Q2 out of 2 it is 50%. After Q2, it's complete.
+  const sectionProgress = Math.round((currentQuestionIndex / currentSection.questions.length) * 100);
+
+  const handleOptionSelect = (option: string) => {
+    setAnswers(prev => ({ ...prev, [currentQ.id]: option }));
+    
+    // Auto advance
+    setTimeout(() => {
+      if (currentQuestionIndex < currentSection.questions.length - 1) {
+        setCurrentQuestionIndex(prev => prev + 1);
+      } else {
+        setMode('section-complete');
+      }
+    }, 400); // slight delay to show selection
+  };
+
+  return (
+    <div className="flex-1 bg-gray-50 flex flex-col w-full h-full relative">
+      <div className="flex justify-between items-center py-5 px-6 border-b border-gray-100 bg-white z-10 shadow-sm rounded-b-3xl">
+        <h1 className="text-xl font-bold text-gray-900 truncate pr-4">{currentSection.title}</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden shrink-0 flex items-center relative shadow-inner">
+            <motion.div 
+              className="absolute left-0 top-0 bottom-0 bg-primary rounded-full"
+              animate={{ width: `${sectionProgress}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+          <span className="text-sm text-gray-500 font-bold shrink-0">{sectionProgress}%</span>
+        </div>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center">
+      <div className="p-6 flex-1 overflow-y-auto">
         <motion.div 
           key={`${currentSectionIndex}-${currentQuestionIndex}`}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
           className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100"
         >
-          <h2 className="text-xl font-medium text-gray-900 mb-6">{currentQ.question}</h2>
+          <p className="text-lg font-bold text-gray-900 mb-6 flex items-start gap-1">
+             <span className="text-primary mt-1">*</span> {currentQ.question}
+          </p>
           
           <div className="space-y-3">
             {currentQ.options.map((option) => {
@@ -211,29 +372,23 @@ export function ProfileBuilderView({ setView, userProfile }: ProfileBuilderViewP
                 <button
                   key={option}
                   onClick={() => handleOptionSelect(option)}
-                  className={`w-full text-left p-4 rounded-xl border font-medium text-base transition-all duration-200 ${
+                  className={`w-full text-left p-4 flex items-center gap-3 transition-colors border group rounded-2xl ${
                     isSelected 
-                      ? 'border-primary bg-gray-100 text-gray-900' 
-                      : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm'
+                      ? 'border-primary bg-primary/5 shadow-sm' 
+                      : 'border-gray-200 bg-white hover:border-primary/50 hover:bg-gray-50'
                   }`}
                 >
-                  {option}
+                  <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center ${isSelected ? 'border-primary' : 'border-gray-300 group-hover:border-primary/50'}`}>
+                    {isSelected && <div className="w-2.5 h-2.5 bg-primary rounded-full" />}
+                  </div>
+                  <span className={`text-[15px] font-medium leading-tight ${isSelected ? 'text-primary' : 'text-gray-700'}`}>{option}</span>
                 </button>
               );
             })}
           </div>
         </motion.div>
       </div>
-
-      <div className="pt-6 pb-8">
-        <button 
-          onClick={handleNext}
-          disabled={!answers[currentQ.id]}
-          className="w-full bg-[#8B319E] text-white py-4 px-6 rounded-2xl font-bold text-xl flex items-center justify-center transition-all hover:opacity-90 active:scale-[0.98] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLastQuestionOverall ? 'Complete profile' : 'Next Question'}
-        </button>
-      </div>
     </div>
   );
 }
+
