@@ -15,8 +15,8 @@ import { OnboardingView } from './views/OnboardingView';
 import { ProfileBuilderView } from './views/ProfileBuilderView';
 import { WalletView } from './views/WalletView';
 import { SplashScreen } from './components/SplashScreen';
-import logo2Img from './assets/logo2.png';
-import rewardsImg from './assets/rewards.png';
+import logo2Img from './assets/berry-logo.png';
+import rewardsImg from './assets/berry-rewards.png';
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
