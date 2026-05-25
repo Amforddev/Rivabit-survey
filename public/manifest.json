@@ -1,0 +1,8 @@
+{
+  "name": "berry",
+  "short_name": "berry",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf9ee",
+  "theme_color": "#ffffff"
+}

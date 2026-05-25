@@ -6,6 +6,7 @@ import { doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 
 interface ProfileBuilderViewProps {
+  key?: React.Key;
   setView: (view: View) => void;
   userProfile: UserProfile;
 }

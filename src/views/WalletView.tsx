@@ -140,24 +140,23 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
       </div>
 
       {/* Balance Card */}
-      <div className="bg-gradient-to-br from-primary to-primary/80 rounded-[2rem] p-8 text-white shadow-md relative overflow-hidden">
+      <div className="bg-primary rounded-[2rem] p-8 text-white shadow-md relative overflow-hidden">
         <div className="relative z-10">
-          <p className="text-gray-300 font-medium mb-1">Available Balance</p>
-          <h2 className="text-4xl font-bold mb-6">₦{userProfile.walletBalance?.toLocaleString() || '0'}</h2>
+          <p className="text-white/80 font-medium mb-1 text-base">Available Balance</p>
+          <h2 className="text-4xl font-bold mb-6 tracking-tight">₦{userProfile.walletBalance?.toLocaleString() || '0'}</h2>
           
-          <div className="flex gap-3">
+          <div className="flex">
             <button 
               onClick={handleWithdrawClick}
-              className="flex-1 bg-gradient-to-r from-accent via-secondary to-accent animate-gradient bg-size-200 text-white py-4 px-8 rounded-full font-black text-xl flex items-center justify-between transition-all hover:opacity-90 active:scale-[0.98] shadow-lg group"
+              className="w-full bg-black/10 hover:bg-black/20 text-white py-2.5 pl-6 pr-2.5 rounded-full font-semibold text-lg flex items-center justify-between transition-all active:scale-[0.98] group"
             >
               <span className="tracking-tight">Withdraw</span>
-              <div className="w-12 h-12 bg-[#1C1F26] rounded-full flex items-center justify-center text-white group-hover:translate-x-1 transition-transform shadow-inner">
-                <ArrowUpRight size={24} strokeWidth={3} />
+              <div className="w-10 h-10 bg-[#1C1F26] rounded-full flex items-center justify-center text-white group-hover:translate-x-1 transition-transform shrink-0 shadow-sm">
+                <ArrowUpRight size={20} strokeWidth={2.5} />
               </div>
             </button>
           </div>
         </div>
-        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
       </div>
 
       {(!userProfile.kycVerified || !(userProfile as any).phoneVerified) && (

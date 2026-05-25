@@ -15,7 +15,7 @@ import { OnboardingView } from './views/OnboardingView';
 import { ProfileBuilderView } from './views/ProfileBuilderView';
 import { WalletView } from './views/WalletView';
 import { SplashScreen } from './components/SplashScreen';
-import logo2Img from './assets/logo2.png';
+import { Logo } from './components/Logo';
 import rewardsImg from './assets/rewards.png';
 
 export default function App() {
@@ -349,7 +349,7 @@ export default function App() {
   const completedSurveyIds = submissions.map(s => s.surveyId);
 
   return (
-    <div className="min-h-screen bg-[#fbf9ee] font-sans flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-[#ffffff] font-sans flex flex-col relative overflow-hidden">
         
         {showSplash && (
           <div className="absolute inset-0 z-[100]">
@@ -382,9 +382,9 @@ export default function App() {
             </AnimatePresence>
 
             {view !== 'survey_active' && view !== 'profile-builder' && (
-              <header className="bg-[#fbf9ee] px-6 py-2 flex justify-between items-center z-10 relative max-w-md mx-auto w-full">
+              <header className="bg-[#ffffff] px-6 py-2 flex justify-between items-center z-10 relative max-w-md mx-auto w-full">
                 <div className="flex items-center gap-2">
-                  <img src={logo2Img} alt="berry Logo" className="w-8 h-8 rounded-lg object-contain" referrerPolicy="no-referrer" />
+                  <Logo className="w-8 h-8" showText={false} />
                   <div>
                     <h1 className="text-xl font-bold text-gray-900 tracking-tight">berry</h1>
                     <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Hello, {activeProfile.displayName?.split(' ')[0] || 'User'}</p>
@@ -413,7 +413,7 @@ export default function App() {
 
             <main 
               id="main-scroll-container"
-              className="flex-1 overflow-y-auto relative bg-[#fbf9ee] pb-24 scrollbar-hide max-w-md mx-auto w-full"
+              className="flex-1 overflow-y-auto relative bg-[#ffffff] pb-24 scrollbar-hide max-w-md mx-auto w-full"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
@@ -591,7 +591,7 @@ export default function App() {
                       </button>
                       <button 
                         onClick={nextTutorialStep}
-                        className="bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-[0_4px_14px_0_rgba(202,63,115,0.39)] hover:bg-primary/90 transition-all hover:scale-105 active:scale-95"
+                        className="bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-[0_4px_14px_0_rgba(90,75,255,0.39)] hover:bg-primary/90 transition-all hover:scale-105 active:scale-95"
                       >
                         {tutorialStep === tutorialSteps.length - 1 ? 'Got it!' : 'Next'}
                       </button>
@@ -625,7 +625,7 @@ function NavItem({ icon: Icon, label, isActive, onClick, badge }: { icon: React.
         transition={{ type: "spring", stiffness: 400, damping: 15 }}
         className="relative"
       >
-        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} fill={isActive ? "currentColor" : "none"} className={isActive ? "drop-shadow-[0_2px_4px_rgba(202,63,115,0.3)]" : ""} />
+        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} fill={isActive ? "currentColor" : "none"} className={isActive ? "drop-shadow-[0_2px_4px_rgba(90,75,255,0.3)]" : ""} />
         {badge && (
           <div className="absolute -top-1 -right-2 bg-[#E15A5A] text-white text-[8px] font-bold px-1.5 rounded-md min-w-[16px] h-[14px] flex items-center justify-center border border-white">
             {badge}

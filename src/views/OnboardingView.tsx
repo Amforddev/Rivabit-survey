@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ChevronLeft } from 'lucide-react';
 import { View } from '../types';
-import logo2Img from '../assets/logo2.png';
+import { Logo } from '../components/Logo';
 
 type AuthStep = 'welcome' | 'signup' | 'verify-email' | 'verify-phone' | 'success' | 'signin' | 'forgot';
 
@@ -80,10 +80,8 @@ export function OnboardingView({ setView }: OnboardingViewProps) {
             exit={{ opacity: 0, y: -20 }}
             className="space-y-8"
           >
-            <div className="text-center space-y-4">
-              <div className="w-32 h-32 mx-auto">
-                <img src={logo2Img} alt="berry Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-              </div>
+            <div className="text-center space-y-4 flex flex-col items-center">
+              <Logo className="h-32 w-auto mb-4 text-[#FDF160]" showText={false} />
               <h1 className="text-5xl font-bold text-white tracking-tighter">berry</h1>
               <p className="text-gray-400 text-lg">Your opinions, harvested into rewards.</p>
             </div>

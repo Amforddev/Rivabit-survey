@@ -3,11 +3,11 @@
 
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --color-primary: #4A1D3D;
-  --color-secondary: #B76E79;
-  --color-accent: #7D3C5E;
-  --color-kinetic-berry: #B76E79;
-  --color-kinetic-cream: #fbf9ee;
+  --color-primary: #5A4BFF;
+  --color-secondary: #4A3BEE;
+  --color-accent: #6A5CFF;
+  --color-kinetic-berry: #5A4BFF;
+  --color-kinetic-cream: #ffffff;
 
   --animate-gradient: gradient-motion 5s ease infinite;
 
