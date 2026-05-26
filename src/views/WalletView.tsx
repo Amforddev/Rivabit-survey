@@ -148,11 +148,11 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
           <div className="flex">
             <button 
               onClick={handleWithdrawClick}
-              className="w-full bg-black/10 hover:bg-black/20 text-white py-2.5 pl-6 pr-2.5 rounded-full font-semibold text-lg flex items-center justify-between transition-all active:scale-[0.98] group"
+              className="bg-black/20 hover:bg-black/30 text-white py-2 pl-6 pr-2 rounded-full font-semibold text-base flex items-center gap-4 transition-all active:scale-[0.98] group"
             >
               <span className="tracking-tight">Withdraw</span>
-              <div className="w-10 h-10 bg-[#1C1F26] rounded-full flex items-center justify-center text-white group-hover:translate-x-1 transition-transform shrink-0 shadow-sm">
-                <ArrowUpRight size={20} strokeWidth={2.5} />
+              <div className="w-8 h-8 bg-[#1C1F26] rounded-full flex items-center justify-center text-white group-hover:translate-x-1 transition-transform shrink-0 shadow-sm">
+                <ArrowUpRight size={16} strokeWidth={2.5} />
               </div>
             </button>
           </div>

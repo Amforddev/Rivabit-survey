@@ -15,7 +15,7 @@ import { OnboardingView } from './views/OnboardingView';
 import { ProfileBuilderView } from './views/ProfileBuilderView';
 import { WalletView } from './views/WalletView';
 import { SplashScreen } from './components/SplashScreen';
-import { Logo } from './components/Logo';
+import logoImg from './assets/logo.png';
 import rewardsImg from './assets/rewards.png';
 
 export default function App() {
@@ -383,11 +383,10 @@ export default function App() {
 
             {view !== 'survey_active' && view !== 'profile-builder' && (
               <header className="bg-[#ffffff] px-6 py-2 flex justify-between items-center z-10 relative max-w-md mx-auto w-full">
-                <div className="flex items-center gap-2">
-                  <Logo className="w-8 h-8" showText={false} />
-                  <div>
-                    <h1 className="text-xl font-bold text-gray-900 tracking-tight">berry</h1>
-                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Hello, {activeProfile.displayName?.split(' ')[0] || 'User'}</p>
+                <div className="flex items-center gap-3">
+                  <img src={logoImg} alt="berry Logo" className="h-10 w-auto object-contain" referrerPolicy="no-referrer" />
+                  <div className="flex flex-col justify-center">
+                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mt-0.5">Hello, {activeProfile.displayName?.split(' ')[0] || 'User'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

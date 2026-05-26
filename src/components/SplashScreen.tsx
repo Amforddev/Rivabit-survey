@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Sparkles } from 'lucide-react';
-import { Logo } from './Logo';
+import logoImg from '../assets/logo3.png';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -18,7 +18,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
   }, [phase]);
 
   return (
-    <div className="absolute inset-0 bg-[#0F1115] z-[100] overflow-hidden">
+    <div className="absolute inset-0 bg-white z-[100] overflow-hidden">
       <AnimatePresence mode="wait">
         {phase === 'logo' ? (
           <motion.div 
@@ -55,22 +55,14 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
               transition={{ duration: 1, ease: "easeOut" }}
               className="relative z-10 flex flex-col items-center"
             >
-              <div className="flex items-center justify-center mb-6">
-                <Logo className="h-24 w-auto text-[#FDF160]" showText={false} />
+              <div className="flex items-center justify-center mb-6 relative w-full h-full">
+                <img src={logoImg} alt="berry Logo" className="h-64 md:h-80 w-auto object-contain relative z-10" referrerPolicy="no-referrer" />
               </div>
-              <motion.h1 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.8 }}
-                className="text-5xl font-bold text-white tracking-tighter"
-              >
-                berry
-              </motion.h1>
               <motion.div 
                 initial={{ width: 0 }}
                 animate={{ width: 40 }}
                 transition={{ delay: 1, duration: 0.8 }}
-                className="h-1 bg-secondary rounded-full mt-4"
+                className="h-1 bg-primary rounded-full mt-4"
               />
             </motion.div>
 
@@ -89,7 +81,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
                       repeat: Infinity, 
                       delay: i * 0.2 
                     }}
-                    className="w-2 h-2 bg-secondary rounded-full"
+                    className="w-2 h-2 bg-primary rounded-full"
                   />
                 ))}
               </div>
@@ -128,7 +120,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
               <motion.div 
                 animate={{ opacity: [0.4, 1, 0.4], scale: [1, 1.2, 1] }}
                 transition={{ duration: 3, repeat: Infinity }}
-                className="absolute top-[25%] left-[15%] text-white/40"
+                className="absolute top-[25%] left-[15%] text-primary/40"
               >
                 <Sparkles size={48} />
               </motion.div>
@@ -136,7 +128,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
               <motion.div 
                 animate={{ opacity: [0.2, 0.8, 0.2], scale: [0.8, 1, 0.8] }}
                 transition={{ duration: 4, repeat: Infinity, delay: 1 }}
-                className="absolute top-[35%] left-[30%] text-white/30"
+                className="absolute top-[35%] left-[30%] text-primary/30"
               >
                 <Sparkles size={24} />
               </motion.div>
@@ -151,7 +143,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
                 className="space-y-8"
               >
                 <div className="space-y-2">
-                  <h1 className="text-5xl font-bold text-white leading-[1.1] tracking-tight">
+                  <h1 className="text-5xl font-bold text-gray-900 leading-[1.1] tracking-tight">
                     Harvest Your<br />
                     Rewards!
                   </h1>
@@ -168,9 +160,9 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.5 + (i * 0.2) }}
-                      className="flex items-center gap-3 text-gray-300 text-lg"
+                      className="flex items-center gap-3 text-gray-600 text-lg"
                     >
-                      <div className="w-1.5 h-1.5 bg-secondary rounded-full" />
+                      <div className="w-1.5 h-1.5 bg-primary rounded-full" />
                       {text}
                     </motion.li>
                   ))}

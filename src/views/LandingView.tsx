@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowRight, Smartphone, Globe, BarChart3, Users, ShieldCheck, Zap, PlayCircle, Apple, CheckCircle2, Coins, ClipboardList, CheckSquare, Wallet, Star, Heart, Target, TrendingUp } from 'lucide-react';
 import { View } from '../types';
 import heroImg from '../assets/hero.jpg';
-import logoImg from '../assets/logo2.png';
+import logoImg from '../assets/logo.png';
 
 interface LandingViewProps {
   setView: (view: View) => void;
@@ -83,7 +83,6 @@ export const LandingView: React.FC<LandingViewProps> = ({ setView }) => {
             <div className="w-10 h-10 flex items-center justify-center">
               <img src={logoImg} alt="berry Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
             </div>
-            <span className="text-2xl font-extrabold tracking-tighter">berry</span>
           </div>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-bold text-gray-600">
@@ -431,7 +430,6 @@ export const LandingView: React.FC<LandingViewProps> = ({ setView }) => {
               <div className="w-8 h-8 flex items-center justify-center">
                 <img src={logoImg} alt="berry Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
               </div>
-              <span className="text-2xl font-extrabold tracking-tighter">berry</span>
             </div>
             <p className="text-gray-600 text-sm font-medium leading-relaxed">
               The world's most rewarding survey platform. Empowering consumers and businesses through data.
