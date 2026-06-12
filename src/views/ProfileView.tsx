@@ -1,24 +1,81 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Coins, Trophy, ChevronRight, LogOut, Copy, CheckCircle2, History, Edit2, Gift } from 'lucide-react';
-import { View, UserProfile, Redemption, SurveySubmission } from '../types';
+import { User, Coins, Trophy, ChevronRight, LogOut, Copy, CheckCircle2, History, Edit2, Gift, ShieldAlert, BadgeInfo, Check, X as XIcon, HelpCircle } from 'lucide-react';
+import { View, UserProfile, Redemption, SurveySubmission, PrizeClaim } from '../types';
 import { logOut, auth } from '../firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, increment, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 interface ProfileViewProps {
   userProfile: UserProfile;
   redemptions: Redemption[];
   submissions: SurveySubmission[];
-  showToast: (title: string, message: string) => void;
+  showToast: (title: string, message: string, type?: 'success' | 'error') => void;
   setView: (view: View) => void;
+  claims: PrizeClaim[];
 }
 
-const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, submissions, showToast, setView }) => {
+const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, submissions, showToast, setView, claims }) => {
   const [copied, setCopied] = useState(false);
   const [showHistory, setShowHistory] = useState<'none' | 'surveys' | 'redemptions'>('none');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(userProfile.displayName || '');
+  const [showAdminPortal, setShowAdminPortal] = useState(false);
+
+  const handleApproveClaim = async (claim: PrizeClaim) => {
+    if (!claim.id) return;
+    try {
+      // 1. Update claim status to verified
+      await updateDoc(doc(db, 'claims', claim.id), {
+        status: 'verified'
+      });
+
+      // 2. Add N50,000 to user's walletBalance
+      await updateDoc(doc(db, 'users', claim.userId), {
+        walletBalance: increment(50000)
+      });
+
+      // 3. Create success notification for user
+      await addDoc(collection(db, 'notifications'), {
+        userId: claim.userId,
+        title: 'Weekly Raffle Approved! 🎉',
+        message: `Your share post for ticket #A10294 has been verified! ₦50,000 has been added to your Wallet balance.`,
+        read: false,
+        createdAt: serverTimestamp(),
+        type: 'redemption'
+      });
+
+      showToast('Claim Approved!', '₦50,000 has been credited to the user.', 'success');
+    } catch (e) {
+      console.error("Failed to approve claim", e);
+      showToast('Error', 'Failed to approve claim. Please try again.', 'error');
+    }
+  };
+
+  const handleRejectClaim = async (claim: PrizeClaim) => {
+    if (!claim.id) return;
+    try {
+      // 1. Update claim status to rejected
+      await updateDoc(doc(db, 'claims', claim.id), {
+        status: 'rejected'
+      });
+
+      // 2. Create notification for user
+      await addDoc(collection(db, 'notifications'), {
+        userId: claim.userId,
+        title: 'Weekly Raffle Rejected ⚠️',
+        message: `We were unable to verify your shared post. Please resubmit your claim on the Rewards page.`,
+        read: false,
+        createdAt: serverTimestamp(),
+        type: 'system'
+      });
+
+      showToast('Claim Flagged', 'Claim rejected and notification dispatched.', 'success');
+    } catch (e) {
+      console.error("Failed to reject claim", e);
+      showToast('Error', 'Failed to reject claim.', 'error');
+    }
+  };
 
   const handleSaveName = async () => {
     if (editName.trim() && editName !== userProfile.displayName) {
@@ -316,6 +373,95 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
             <span className="font-medium text-red-500 text-base">Log Out</span>
           </div>
         </button>
+      </div>
+
+      {/* Admin Payout Claims Terminal */}
+      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between cursor-pointer" onClick={() => setShowAdminPortal(!showAdminPortal)}>
+          <div>
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="text-amber-500 animate-pulse" size={20} />
+              <h3 className="font-semibold text-lg text-gray-900">Claims Payout Terminal</h3>
+            </div>
+            <p className="text-gray-500 text-xs mt-1">Review & authorize raffle winner payouts</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {claims.filter(c => c.status === 'pending').length > 0 && (
+              <span className="bg-amber-500 font-bold text-white text-[10px] px-2 py-0.5 rounded-full">
+                {claims.filter(c => c.status === 'pending').length} pending
+              </span>
+            )}
+            <ChevronRight size={20} className={`text-gray-400 transition-transform ${showAdminPortal ? 'rotate-90' : ''}`} />
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {showAdminPortal && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden mt-4 pt-4 border-t border-gray-100 space-y-4"
+            >
+              {claims.length === 0 ? (
+                <div className="text-center py-6 bg-gray-50 rounded-2xl border border-dashed">
+                  <BadgeInfo className="mx-auto text-gray-400 mb-1" size={20} />
+                  <p className="text-xs text-gray-500 font-medium">No payout claims exist in the system yet.</p>
+                </div>
+              ) : (
+                claims.map(claim => (
+                  <div key={claim.id} className="bg-gray-50 border rounded-2xl p-4 text-left">
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <h4 className="font-bold text-sm text-gray-900">{claim.displayName}</h4>
+                        <p className="text-[10px] text-gray-500">Ticket: {claim.ticketNumber} • {claim.rewardTitle}</p>
+                      </div>
+                      <span className={`uppercase font-bold text-[9px] px-2 py-0.5 rounded-full border ${
+                        claim.status === 'pending' ? 'bg-amber-50 border-amber-200 text-amber-600' :
+                        claim.status === 'verified' ? 'bg-emerald-50 border-emerald-200 text-emerald-600' :
+                        'bg-red-50 border-red-200 text-red-600'
+                      }`}>
+                        {claim.status}
+                      </span>
+                    </div>
+
+                    <div className="mt-2.5 bg-white border p-2.5 rounded-xl">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Shared Post Proof ({claim.platform})</p>
+                      <p className="text-xs text-gray-700 italic font-mono leading-relaxed bg-gray-50/50 p-2 rounded">
+                        "{claim.postText}"
+                      </p>
+                    </div>
+
+                    {claim.status === 'pending' ? (
+                      <div className="mt-3 flex gap-2.5">
+                        <button
+                          onClick={() => handleRejectClaim(claim)}
+                          className="flex-1 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors flex items-center justify-center gap-1 bg-white"
+                        >
+                          <XIcon size={14} />
+                          <span>Flag / Reject</span>
+                        </button>
+                        <button
+                          onClick={() => handleApproveClaim(claim)}
+                          className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1 shadow-sm"
+                        >
+                          <Check size={14} />
+                          <span>Pay ₦50,000</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-2.5 text-right">
+                        <p className="text-[10px] text-gray-400 font-medium">
+                          Processed • {claim.status === 'verified' ? 'Approved & Paid' : 'Flagged & Rejected'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="mt-4 p-4 bg-gray-100 rounded-2xl border border-dashed border-gray-300">

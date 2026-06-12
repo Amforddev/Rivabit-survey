@@ -71,15 +71,6 @@ export const MOCK_SURVEYS: Survey[] = [
 
 export const REWARD_CATEGORIES: RewardCategory[] = [
   {
-    id: 'cash',
-    title: 'Cash',
-    iconName: 'Banknote',
-    options: [
-      { id: 'c1', title: '₦1000 to Wallet', cost: 1100, description: 'Added to your in-app wallet immediately' },
-      { id: 'c2', title: '₦5000 to Wallet', cost: 5000, description: 'Added to your in-app wallet immediately' }
-    ]
-  },
-  {
     id: 'raffle',
     title: 'Feeling lucky?',
     iconName: 'Ticket',

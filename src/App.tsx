@@ -5,7 +5,7 @@ import { doc, onSnapshot, collection, query, where, addDoc, serverTimestamp, upd
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { db, auth, handleFirestoreError, OperationType } from './firebase';
 
-import { View, Survey, RewardOption, UserProfile, SurveySubmission, Redemption, AppNotification } from './types';
+import { View, Survey, RewardOption, UserProfile, SurveySubmission, Redemption, AppNotification, PrizeClaim } from './types';
 import HomeView from './views/HomeView';
 import SurveysView from './views/SurveysView';
 import ActiveSurveyView from './views/ActiveSurveyView';
@@ -29,6 +29,7 @@ export default function App() {
   const [submissions, setSubmissions] = useState<SurveySubmission[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [claims, setClaims] = useState<PrizeClaim[]>([]);
   
   const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
   const [toast, setToast] = useState<{title: string, message: string, type?: 'success'|'error'} | null>(null);
@@ -106,38 +107,68 @@ export default function App() {
         }
       }
     }, (err) => {
-      console.error("Profile snapshot error:", err);
-      // For UI-only demo, don't block the app with connection errors
-      // Just log it and let the app use fallback data
-      if (err.message.includes('offline') || err.message.includes('unavailable')) {
-        console.warn("Firestore is unavailable, running in offline/mock mode.");
+      if (err.message?.includes('offline') || err.message?.includes('unavailable') || err.code === 'unavailable') {
+        console.warn("Firestore user profile snapshot: currently offline. Using offline/cached data.");
       } else {
         setInitError("Database error: " + err.message);
+        handleFirestoreError(err, OperationType.GET, `users/${userId}`);
       }
     });
 
     const qSub = query(collection(db, 'surveySubmissions'), where('userId', '==', userId));
     const unsubSub = onSnapshot(qSub, (snap) => {
       setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as SurveySubmission)));
-    }, (err) => console.error("Submissions error:", err));
+    }, (err) => {
+      if (err.message?.includes('offline') || err.message?.includes('unavailable') || err.code === 'unavailable') {
+        console.warn("Submissions query: currently offline.");
+      } else {
+        handleFirestoreError(err, OperationType.GET, 'surveySubmissions');
+      }
+    });
 
     const qRed = query(collection(db, 'redemptions'), where('userId', '==', userId));
     const unsubRed = onSnapshot(qRed, (snap) => {
       setRedemptions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Redemption)));
-    }, (err) => console.error("Redemptions error:", err));
+    }, (err) => {
+      if (err.message?.includes('offline') || err.message?.includes('unavailable') || err.code === 'unavailable') {
+        console.warn("Redemptions query: currently offline.");
+      } else {
+        handleFirestoreError(err, OperationType.GET, 'redemptions');
+      }
+    });
 
     const qNotif = query(collection(db, 'notifications'), where('userId', '==', userId));
     const unsubNotif = onSnapshot(qNotif, (snap) => {
       const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AppNotification));
       notifs.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
       setNotifications(notifs);
-    }, (err) => console.error("Notifications error:", err));
+    }, (err) => {
+      if (err.message?.includes('offline') || err.message?.includes('unavailable') || err.code === 'unavailable') {
+        console.warn("Notifications query: currently offline.");
+      } else {
+        handleFirestoreError(err, OperationType.GET, 'notifications');
+      }
+    });
+
+    const qClaims = query(collection(db, 'claims'));
+    const unsubClaims = onSnapshot(qClaims, (snap) => {
+      const allClaims = snap.docs.map(d => ({ id: d.id, ...d.data() } as PrizeClaim));
+      allClaims.sort((a, b) => (b.claimedAt?.toMillis() || 0) - (a.claimedAt?.toMillis() || 0));
+      setClaims(allClaims);
+    }, (err) => {
+      if (err.message?.includes('offline') || err.message?.includes('unavailable') || err.code === 'unavailable') {
+        console.warn("Claims query: currently offline.");
+      } else {
+        handleFirestoreError(err, OperationType.GET, 'claims');
+      }
+    });
 
     return () => {
       unsubProfile();
       unsubSub();
       unsubRed();
       unsubNotif();
+      unsubClaims();
     };
   }, [user]);
 
@@ -390,18 +421,12 @@ export default function App() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setView('wallet')}
-                    className="flex items-center gap-1 bg-white border border-gray-100 px-3 py-1.5 rounded-full text-gray-900 font-bold text-xs shadow-sm hover:bg-gray-50 transition-colors"
-                  >
-                    <Wallet size={14} className="text-primary" />
-                    <span>₦{activeProfile.walletBalance?.toLocaleString() || '0'}</span>
-                  </button>
                   <motion.div 
                     key={activeProfile.berry}
                     initial={{ scale: 1.1 }}
                     animate={{ scale: 1 }}
-                    className="flex items-center gap-1 bg-white border border-gray-100 px-3 py-1.5 rounded-full text-gray-900 font-bold text-xs shadow-sm"
+                    className="flex items-center gap-1 bg-white border border-gray-100 px-3 py-1.5 rounded-full text-gray-900 font-bold text-xs shadow-sm cursor-pointer"
+                    onClick={() => setView('wallet')}
                   >
                     <Coins size={14} className="text-primary" />
                     <span>{activeProfile.berry?.toLocaleString() || '0'}</span>
@@ -481,6 +506,7 @@ export default function App() {
                       redeemReward={redeemReward} 
                       redemptions={redemptions}
                       showToast={showToast}
+                      claims={claims}
                     />
                   )}
                   {view === 'profile' && (
@@ -491,6 +517,7 @@ export default function App() {
                       submissions={submissions}
                       showToast={showToast}
                       setView={setView}
+                      claims={claims}
                     />
                   )}
                   {view === 'profile-builder' && (

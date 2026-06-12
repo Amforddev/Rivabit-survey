@@ -61,6 +61,23 @@
         "type": { "type": "string", "enum": ["survey", "redemption", "referral", "system"] }
       },
       "required": ["userId", "title", "message", "read", "createdAt", "type"]
+    },
+    "PrizeClaim": {
+      "title": "PrizeClaim",
+      "description": "A claim submitted by a user for winning a raffle, backed by a social media post.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "ticketNumber": { "type": "string" },
+        "rewardTitle": { "type": "string" },
+        "rewardId": { "type": "string" },
+        "platform": { "type": "string", "enum": ["facebook", "instagram", "twitter", "linkedin", "whatsapp"] },
+        "postText": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "verified", "rejected"] },
+        "claimedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "ticketNumber", "rewardTitle", "rewardId", "platform", "postText", "status", "claimedAt"]
     }
   },
   "firestore": {
@@ -79,6 +96,10 @@
     "notifications/{notificationId}": {
       "schema": { "$ref": "#/entities/Notification" },
       "description": "In-app notifications."
+    },
+    "claims/{claimId}": {
+      "schema": { "$ref": "#/entities/PrizeClaim" },
+      "description": "User prize claims with share proof."
     }
   }
 }

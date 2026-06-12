@@ -4,6 +4,7 @@ import { Wallet, ArrowUpRight, ArrowDownLeft, Building2, CheckCircle2, AlertCirc
 import { UserProfile } from '../types';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import berryIllustration from '../assets/berry_illustration_1.svg';
 
 interface WalletViewProps {
   userProfile: UserProfile;
@@ -31,16 +32,17 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
   
   const [bankName, setBankName] = useState(userProfile.bankName || '');
   const [accountNumber, setAccountNumber] = useState(userProfile.accountNumber || '');
+  const [accountName, setAccountName] = useState(userProfile.kycName || '');
   
   // Mock derived customer name
-  const derivedCustomerName = `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || userProfile.displayName || 'Demo User';
+  const derivedCustomerName = accountName || userProfile.kycName || `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || userProfile.displayName || 'Demo User';
 
   const handleWithdrawClick = () => {
-    if (!userProfile.kycVerified || !(userProfile as any).phoneVerified) {
+    if (!(userProfile as any).phoneVerified) {
       setShowKycRequiredModal(true);
       return;
     }
-    if (!userProfile.bankName || !userProfile.accountNumber) {
+    if (!userProfile.bankName || !userProfile.accountNumber || !userProfile.kycName) {
       setShowBankSetupModal(true);
     } else {
       setShowWithdrawModal(true);
@@ -91,21 +93,37 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
     }, 1000);
   };
 
-  const handleBankSetupSubmit = (e: React.FormEvent) => {
+  const handleBankSetupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setUserProfile(prev => ({
-      ...prev,
-      bankName,
-      accountNumber,
-      kycName: derivedCustomerName
-    }));
+    try {
+      await updateDoc(doc(db, 'users', userProfile.uid), {
+        bankName,
+        accountNumber,
+        kycName: accountName
+      });
+      setUserProfile(prev => ({
+        ...prev,
+        bankName,
+        accountNumber,
+        kycName: accountName
+      }));
+    } catch (err) {
+      console.error("Error setting bank details in Firestore:", err);
+      // Fallback
+      setUserProfile(prev => ({
+        ...prev,
+        bankName,
+        accountNumber,
+        kycName: accountName
+      }));
+    }
     setShowBankSetupModal(false);
     setShowWithdrawModal(true);
   };
 
   const handleWithdrawSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (Number(withdrawAmount) > userProfile.walletBalance) return;
+    if (Number(withdrawAmount) > userProfile.berry) return;
     setShowWithdrawModal(false);
     setShowConfirmModal(true);
   };
@@ -115,14 +133,26 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
     setShowOTPModal(true);
   };
 
-  const handleOTPSubmit = (e: React.FormEvent) => {
+  const handleOTPSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.length === 4) {
-      // Mock success
-      setUserProfile(prev => ({
-        ...prev,
-        walletBalance: prev.walletBalance - Number(withdrawAmount)
-      }));
+      const amountToWithdraw = Number(withdrawAmount);
+      try {
+        await updateDoc(doc(db, 'users', userProfile.uid), {
+          berry: userProfile.berry - amountToWithdraw
+        });
+        setUserProfile(prev => ({
+          ...prev,
+          berry: prev.berry - amountToWithdraw
+        }));
+      } catch (err) {
+        console.error("Error saving updated berries to Firestore:", err);
+        // Fallback
+        setUserProfile(prev => ({
+          ...prev,
+          berry: prev.berry - amountToWithdraw
+        }));
+      }
       setShowOTPModal(false);
       setShowSuccessModal(true);
       setWithdrawAmount('');
@@ -143,7 +173,8 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
       <div className="bg-primary rounded-[2rem] p-8 text-white shadow-md relative overflow-hidden">
         <div className="relative z-10">
           <p className="text-white/80 font-medium mb-1 text-base">Available Balance</p>
-          <h2 className="text-4xl font-bold mb-6 tracking-tight">₦{userProfile.walletBalance?.toLocaleString() || '0'}</h2>
+          <h2 className="text-4xl font-bold mb-1 tracking-tight">{userProfile.berry?.toLocaleString() || '0'} Berries</h2>
+          <p className="text-white/70 font-medium text-sm mb-6">≈ ₦{(userProfile.berry * 1).toLocaleString()}</p>
           
           <div className="flex">
             <button 
@@ -159,7 +190,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
         </div>
       </div>
 
-      {(!userProfile.kycVerified || !(userProfile as any).phoneVerified) && (
+      {!(userProfile as any).phoneVerified && (
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
           <div className="flex justify-between items-center mb-3">
             <h3 className="font-bold text-gray-900 text-sm">Action Required for Withdrawal</h3>
@@ -178,26 +209,6 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
                   <div className="text-left">
                     <h4 className="font-bold text-gray-900 text-sm">Verify phone number</h4>
                     <p className="text-xs text-gray-500">Secure your account</p>
-                  </div>
-                </div>
-                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-gray-400 group-hover:text-primary transition-colors shadow-sm">
-                  <ArrowRight size={16} />
-                </div>
-              </button>
-            )}
-
-            {!userProfile.kycVerified && (
-              <button 
-                onClick={() => setShowKycModal(true)}
-                className="w-full bg-gray-50 border border-gray-100 p-3 rounded-xl flex items-center justify-between group hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-red-100 text-red-600">
-                    <ShieldAlert size={20} />
-                  </div>
-                  <div className="text-left">
-                    <h4 className="font-bold text-gray-900 text-sm">Verify your identity</h4>
-                    <p className="text-xs text-gray-500">Required for withdrawals</p>
                   </div>
                 </div>
                 <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-gray-400 group-hover:text-primary transition-colors shadow-sm">
@@ -418,7 +429,7 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
               <Building2 size={24} />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Setup Bank Account</h3>
-            <p className="text-sm text-gray-500 mb-6">Please provide your bank details. The customer name will be derived and cross-checked against your KYC name.</p>
+            <p className="text-sm text-gray-500 mb-6 font-medium">Please provide your bank details for withdrawal transfers.</p>
             
             <form onSubmit={handleBankSetupSubmit} className="space-y-4">
               <div>
@@ -429,6 +440,17 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
                   value={bankName}
                   onChange={e => setBankName(e.target.value)}
                   placeholder="e.g. GTBank"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+                <input 
+                  type="text" 
+                  required
+                  value={accountName}
+                  onChange={e => setAccountName(e.target.value)}
+                  placeholder="e.g. John Doe"
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -444,10 +466,11 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
                 />
               </div>
               
-              <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
-                <p className="text-xs text-blue-600 font-medium mb-1">Derived Customer Name</p>
-                <p className="text-sm text-blue-900 font-semibold">{derivedCustomerName}</p>
-                <p className="text-[10px] text-blue-500 mt-1">This will be cross-checked with your KYC records.</p>
+              <div className="bg-yellow-50 p-3 rounded-xl border border-yellow-100">
+                <p className="text-[10px] text-yellow-600 font-bold mb-1 uppercase tracking-wider">⚠️ Important Warning</p>
+                <p className="text-[11px] text-yellow-800 leading-relaxed font-semibold">
+                  Once set, your bank account information is permanently locked for security. It can only be changed by contacting the Admin.
+                </p>
               </div>
               
               <div className="flex gap-3 mt-6">
@@ -471,51 +494,121 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
       )}
 
       {showWithdrawModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl"
+            className="bg-white rounded-[2.5rem] p-7 w-full max-w-md shadow-2xl relative border border-gray-100/50"
           >
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Withdraw Funds</h3>
+            {/* Close Button */}
+            <button 
+              onClick={() => setShowWithdrawModal(false)}
+              className="absolute right-5 top-5 text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X size={20} />
+            </button>
+
+            <h3 className="text-2xl font-bold text-gray-900 mb-5 tracking-tight flex items-center gap-2 font-sans text-left">
+              <span>Convert Berries to Cash</span>
+              <img src={berryIllustration} alt="Berry Illustration" className="w-8 h-8 object-contain" referrerPolicy="no-referrer" />
+            </h3>
             
-            <div className="bg-gray-50 p-4 rounded-xl mb-6 border border-gray-100">
-              <p className="text-xs text-gray-500 mb-1">Withdrawing to</p>
-              <p className="font-medium text-gray-900">{userProfile.bankName}</p>
-              <p className="text-sm text-gray-600">{userProfile.accountNumber}</p>
-              <p className="text-xs text-gray-500 mt-1">Name: {userProfile.kycName}</p>
+            {/* Bank Card (Destination) */}
+            <div className="bg-[#F8FAFC] p-4.5 rounded-[1.5rem] mb-6 border border-slate-100 relative text-left">
+              <span className="absolute top-3.5 right-4 text-[9px] font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full uppercase tracking-wider">Locked</span>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Withdrawing to bank</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white shadow-sm border border-slate-100/85 rounded-2xl flex items-center justify-center text-primary shrink-0">
+                  <Building2 size={20} className="text-blue-500" />
+                </div>
+                <div>
+                  <p className="font-extrabold text-slate-800 text-sm leading-tight">{userProfile.bankName}</p>
+                  <p className="text-xs text-slate-500 font-mono tracking-wide mt-0.5">{userProfile.accountNumber}</p>
+                  <p className="text-xs font-semibold text-slate-600 mt-1">Account Name: {userProfile.kycName}</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-3 border-t border-slate-200/50 pt-2 italic">
+                To change these details, contact support or admin.
+              </p>
             </div>
 
-            <form onSubmit={handleWithdrawSubmit} className="space-y-4">
+            <form onSubmit={handleWithdrawSubmit} className="space-y-5 text-left">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₦)</label>
-                <input 
-                  type="number" 
-                  required
-                  min="100"
-                  max={userProfile.walletBalance}
-                  value={withdrawAmount}
-                  onChange={e => setWithdrawAmount(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary text-lg font-medium"
-                />
-                <p className="text-xs text-gray-500 mt-2">Available: ₦{userProfile.walletBalance?.toLocaleString() || '0'}</p>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-2">
+                  Berry Amount to Redeem
+                </label>
+                <div className="relative">
+                  <input 
+                    type="number" 
+                    required
+                    min="10"
+                    max={userProfile.berry}
+                    value={withdrawAmount}
+                    onChange={e => setWithdrawAmount(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-[#F1F5F9]/50 border border-slate-200 rounded-[1.75rem] px-5 py-4 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white text-3xl font-black text-slate-800 text-center tracking-tight transition-all"
+                  />
+                  {withdrawAmount && (
+                    <button
+                      type="button"
+                      onClick={() => setWithdrawAmount('')}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+                
+                <div className="flex justify-between items-center mt-3 px-1">
+                  <p className="text-[11px] font-semibold text-slate-500">
+                    Available: <span className="text-slate-800 font-bold">{userProfile.berry?.toLocaleString() || '0'} Berries</span>
+                  </p>
+                  <p className="text-[10px] font-bold text-slate-400">
+                    Minimum redemption: 10,000 berries.
+                  </p>
+                </div>
+              </div>
+
+              {/* Receive Card */}
+              <div className="bg-[#FAF9FF] p-5 rounded-[2rem] border border-indigo-50 relative overflow-hidden flex flex-col items-center justify-center text-center">
+                {/* Floating Coins representation */}
+                <div className="absolute right-4 bottom-2 bg-indigo-50/50 rounded-full flex items-center justify-center opacity-70 shrink-0 select-none p-1.5 border border-indigo-100">
+                  <img src={berryIllustration} alt="Berry Illustration" className="w-7 h-7 object-contain" referrerPolicy="no-referrer" />
+                </div>
+
+                <p className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider mb-1">
+                  You will Receive
+                </p>
+                <h4 className="text-4xl font-extrabold text-[#3F3E8F] tracking-tight">
+                  ₦{Number(withdrawAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </h4>
+                <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mt-1.5">
+                  Total Cash to Wallet & Bank
+                </p>
+                
+                <p className="text-[10px] text-indigo-400/80 font-medium mt-4 pt-3.5 border-t border-indigo-100/50 w-full text-center">
+                  Note: Conversion rate is 1,000 Berries = ₦1,000.00.
+                </p>
               </div>
               
-              <div className="flex gap-3 mt-6">
+              {/* Buttons */}
+              <div className="flex flex-col gap-3 pt-2">
+                <button 
+                  type="submit"
+                  disabled={!withdrawAmount || Number(withdrawAmount) < 10 || Number(withdrawAmount) > userProfile.berry}
+                  className="w-full bg-[#B4B3FF] hover:bg-[#A3A2FF] active:scale-[0.98] text-white py-4 px-6 rounded-[1.75rem] font-bold text-lg flex items-center justify-between transition-all shadow-md shadow-indigo-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                >
+                  <span className="pl-4">Redeem Now</span>
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white shrink-0">
+                    <ArrowRight size={18} strokeWidth={2.5} />
+                  </div>
+                </button>
                 <button 
                   type="button"
                   onClick={() => setShowWithdrawModal(false)}
-                  className="flex-1 py-3 font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200"
+                  className="w-full py-3 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-[1.5rem] transition-colors text-center text-sm font-medium"
                 >
                   Cancel
-                </button>
-                <button 
-                  type="submit"
-                  disabled={!withdrawAmount || Number(withdrawAmount) > userProfile.walletBalance}
-                  className="flex-1 py-3 font-medium text-white bg-primary rounded-xl hover:bg-primary/90 disabled:opacity-50"
-                >
-                  Continue
                 </button>
               </div>
             </form>
@@ -534,8 +627,12 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
             
             <div className="bg-gray-50 p-4 rounded-xl mb-6 border border-gray-100 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">Amount</span>
-                <span className="font-bold text-lg text-gray-900">₦{Number(withdrawAmount).toLocaleString()}</span>
+                <span className="text-sm text-gray-500">Berries to Withdraw</span>
+                <span className="font-bold text-lg text-gray-900">{Number(withdrawAmount).toLocaleString()} Berries</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">Naira Equivalent</span>
+                <span className="font-semibold text-sm text-gray-700">₦{Number(withdrawAmount).toLocaleString()}</span>
               </div>
               <div className="h-px bg-gray-200 w-full"></div>
               <div className="flex justify-between items-center">
@@ -629,13 +726,17 @@ export const WalletView: React.FC<WalletViewProps> = ({ userProfile, setUserProf
             <div className="w-20 h-20 bg-gray-100 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 size={40} />
             </div>
-            <h3 className="text-2xl font-semibold text-gray-900 mb-2">Withdrawal Successful</h3>
-            <p className="text-gray-500 mb-6">Your funds are on the way to your bank account.</p>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Withdrawal Successful</h3>
+            <p className="text-gray-500 mb-6 text-sm">Your funds are on the way to your bank account.</p>
             
             <div className="bg-gray-50 rounded-2xl p-6 mb-8 text-left space-y-4 border border-gray-100">
               <div className="flex justify-between items-center">
-                <span className="text-gray-500 text-sm">Amount</span>
-                <span className="font-bold text-gray-900">₦{Number(withdrawAmount).toLocaleString()}</span>
+                <span className="text-gray-500 text-sm">Amount (Berries)</span>
+                <span className="font-bold text-gray-900">{Number(withdrawAmount).toLocaleString()} Berries</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500 text-sm">Naira Value</span>
+                <span className="font-semibold text-gray-900">₦{Number(withdrawAmount).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-500 text-sm">Bank</span>

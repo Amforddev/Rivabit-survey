@@ -1,24 +1,35 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Coins, CheckCircle2, Ticket, AlertCircle, Share2 } from 'lucide-react';
+import { Coins, CheckCircle2, Ticket, AlertCircle, Share2, Copy, ClipboardCheck, ArrowRight, Loader2, X, Sparkles, MessageCircle, Link, Globe } from 'lucide-react';
 import * as Icons from 'lucide-react';
-import { RewardOption, UserProfile, Redemption } from '../types';
+import logoImg from '../assets/logo.png';
+import { RewardOption, UserProfile, Redemption, PrizeClaim } from '../types';
 import { REWARD_CATEGORIES } from '../data';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface RewardsViewProps {
   userProfile: UserProfile;
   redeemReward: (opt: RewardOption, details?: any) => void;
   redemptions: Redemption[];
-  showToast: (title: string, message: string) => void;
+  showToast: (title: string, message: string, type?: 'success' | 'error') => void;
+  claims: PrizeClaim[];
 }
 
-const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, redemptions, showToast }) => {
+const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, redemptions, showToast, claims }) => {
   const [activeCategory, setActiveCategory] = useState<string>(REWARD_CATEGORIES[0].id);
   const [selectedOption, setSelectedOption] = useState<RewardOption | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [raffleTicket, setRaffleTicket] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<{ticketNumber: string, drawTitle: string, date: string} | null>(null);
+
+  // Social Claim Modal States
+  const [claimStep, setClaimStep] = useState<'platform' | 'loading' | 'preview' | 'confirmed'>('platform');
+  const [selectedPlatform, setSelectedPlatform] = useState<'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'whatsapp' | null>(null);
+  const [generatedPost, setGeneratedPost] = useState<string>('');
+  const [copiedText, setCopiedText] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const category = REWARD_CATEGORIES.find(c => c.id === activeCategory)!;
   const CategoryIcon = (Icons as any)[category.iconName];
@@ -50,10 +61,57 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
     }
   };
 
-  const handleShare = () => {
-    // Automatically claim the prize
-    showToast('Prize Claimed!', '₦50,000 has been added to your wallet balance.');
-    setShowShareModal(false);
+  const handleSelectPlatformNext = () => {
+    if (!selectedPlatform) return;
+    setClaimStep('loading');
+    setTimeout(() => {
+      const code = userProfile.referralCode || 'BERRY';
+      let promoText = '';
+      if (selectedPlatform === 'facebook') {
+        promoText = `Wow! 🥳 I just won the ₦50,000 cash prize in the weekly draw on the berry app! All I did was answer fun, quick surveys on my phone. 🍓 Join berry now with my referral code ${code} and let's earn together: https://berry.app/r/${code}`;
+      } else if (selectedPlatform === 'twitter') {
+        promoText = `OMG! Just won ₦50,000 on the @berryApp weekly draw (Ticket #A10294) 🥳🍓! Easiest surveys ever. Download berry now! Use code: ${code} #berryApp #Surveys #Winners`;
+      } else if (selectedPlatform === 'instagram') {
+        promoText = `Winner details! 🥳 Won ₦50,000 on the berry app weekly raffle (Ticket: #A10294) just for answering surveys. Download berry now to start earning real rewards! 🍓 Code: ${code}`;
+      } else if (selectedPlatform === 'linkedin') {
+        promoText = `I am excited to share that I have been selected as the weekly raffle winner on the berry app, receiving a ₦50,000 cash prize! 🍓 berry connects brands with consumer opinions in a mutually rewarding format. Join with my code: ${code}`;
+      } else {
+        promoText = `Yay! 🥳 I just won ₦50,000 in the berry weekly cash draw with ticket #A10294! 🍓 Join berry now to start answering simple surveys and winning real money cash rewards. Use my referral code: ${code}\nhttps://berry.app/r/${code}`;
+      }
+      setGeneratedPost(promoText);
+      setClaimStep('preview');
+      setCopiedText(false);
+    }, 1200);
+  };
+
+  const handleCopyText = () => {
+    navigator.clipboard.writeText(generatedPost);
+    setCopiedText(true);
+    showToast('Copied!', 'Post content copied to clipboard!', 'success');
+  };
+
+  const handleMarkAsPosted = async () => {
+    setIsSubmitting(true);
+    try {
+      await addDoc(collection(db, 'claims'), {
+        userId: userProfile.uid,
+        displayName: userProfile.displayName || 'Demo User',
+        ticketNumber: '#A10294',
+        rewardTitle: 'Weekly Cash Draw Raffle',
+        rewardId: 'r1',
+        platform: selectedPlatform || 'facebook',
+        postText: generatedPost,
+        status: 'pending',
+        claimedAt: serverTimestamp()
+      });
+      setClaimStep('confirmed');
+      showToast('Claim Submitted!', 'Your claim has been flagged for admin verification.', 'success');
+    } catch (e) {
+      console.error("Failed to submit claim:", e);
+      showToast('Failed to submit', 'There was an issue submitting your claim. Please retry.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -105,6 +163,18 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
               const canAfford = userProfile.berry >= option.cost;
               let myTickets = redemptions.filter(r => r.rewardId === option.id);
               
+              // Inject a winning ticket for 'r1' to test claiming prize
+              if (option.id === 'r1' && !myTickets.some(t => t.details?.ticketNumber === '#A10294')) {
+                myTickets = [{
+                  id: 'mock-winner-r1',
+                  userId: userProfile.uid,
+                  rewardId: 'r1',
+                  cost: 200,
+                  details: { ticketNumber: '#A10294' },
+                  redeemedAt: null
+                }, ...myTickets];
+              }
+
               // Inject mock tickets for 'r3' to demonstrate the horizontal scroll UI
               if (option.id === 'r3' && myTickets.length === 0) {
                 myTickets = Array.from({ length: 12 }, (_, i) => ({
@@ -154,21 +224,68 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
                               <div className="absolute right-0 top-0 bottom-2 w-16 bg-gradient-to-l from-white to-transparent pointer-events-none" />
                             )}
                           </div>
-                          {/* Mock Winning Ticket Logic */}
-                          {option.id === 'r1' && (
-                            <div className="bg-secondary/10 border border-secondary/20 p-3 rounded-xl mt-2">
-                              <p className="text-xs text-secondary font-semibold mb-1">Winner Ticket</p>
-                              <p className="text-sm font-medium text-gray-900">Ticket: #A10294</p>
-                              {myTickets.some(t => t.details?.ticketNumber === '#A10294') && (
-                                <button 
-                                  onClick={() => setShowShareModal(true)}
-                                  className="mt-2 text-xs font-medium text-white bg-secondary px-3 py-1.5 rounded-lg hover:bg-secondary/90 transition-colors"
-                                >
-                                  Claim Prize
-                                </button>
-                              )}
-                            </div>
-                          )}
+                           {/* Mock Winning Ticket Logic */}
+                          {option.id === 'r1' && (() => {
+                            const matchingClaim = claims.find(c => c.rewardId === 'r1' && c.ticketNumber === '#A10294' && c.userId === userProfile.uid);
+                            return (
+                              <div className="bg-secondary/10 border border-secondary/20 p-4 rounded-xl mt-2 text-left">
+                                <p className="text-xs text-secondary font-semibold mb-1 uppercase tracking-wider">Weekly Cash Draw Winner</p>
+                                <div className="flex justify-between items-center mt-1">
+                                  <div>
+                                    <p className="text-sm font-bold text-gray-900">Your Ticket: #A10294</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">Congrats on winning the weekly ₦50,000 draw!</p>
+                                  </div>
+                                  <Ticket className="text-secondary opacity-30 animate-pulse" size={24} />
+                                </div>
+                                
+                                {matchingClaim ? (
+                                  <div className="mt-3 pt-3 border-t border-secondary/10">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className={`w-2 h-2 rounded-full ${
+                                        matchingClaim.status === 'pending' ? 'bg-amber-500 animate-ping' :
+                                        matchingClaim.status === 'verified' ? 'bg-emerald-500' : 'bg-rose-500'
+                                      }`} />
+                                      <p className="text-[11px] font-semibold text-gray-800">
+                                        Claim Status: <span className={`uppercase text-[10px] bg-white border px-1.5 py-0.5 rounded ml-1 font-bold ${
+                                          matchingClaim.status === 'pending' ? 'text-amber-600 border-amber-200' :
+                                          matchingClaim.status === 'verified' ? 'text-emerald-600 border-emerald-200' : 'text-rose-600 border-rose-200'
+                                        }`}>{matchingClaim.status === 'pending' ? 'pending verification' : matchingClaim.status}</span>
+                                      </p>
+                                    </div>
+                                    <p className="text-xs text-gray-600 leading-relaxed bg-white/50 p-2.5 rounded-lg border border-secondary/5 mt-1.5">
+                                      {matchingClaim.status === 'pending' && "An admin has been flagged to verify your shared post. Once verified, your ₦50,000 cash reward will be paid."}
+                                      {matchingClaim.status === 'verified' && "Congratulations! Your share post was verified and ₦50,000 has been paid to your balance."}
+                                      {matchingClaim.status === 'rejected' && "Your shared post could not be verified by the admin. Please try resubmitting your claim."}
+                                    </p>
+                                    {matchingClaim.status === 'rejected' && (
+                                      <button 
+                                        onClick={() => {
+                                          setClaimStep('platform');
+                                          setSelectedPlatform(null);
+                                          setShowShareModal(true);
+                                        }}
+                                        className="mt-3 w-full text-xs font-bold text-white bg-primary py-2 rounded-lg hover:bg-primary/95 transition-colors shadow-sm"
+                                      >
+                                        Resubmit Proof
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <button 
+                                    onClick={() => {
+                                      setClaimStep('platform');
+                                      setSelectedPlatform(null);
+                                      setShowShareModal(true);
+                                    }}
+                                    className="mt-3 w-full text-xs font-bold text-white bg-secondary py-2.5 rounded-xl hover:bg-secondary/95 transition-colors shadow-sm flex items-center justify-center gap-2"
+                                  >
+                                    <Share2 size={14} />
+                                    Click to Claim Prize
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>
@@ -364,45 +481,216 @@ const RewardsView: React.FC<RewardsViewProps> = ({ userProfile, redeemReward, re
         )}
       </AnimatePresence>
 
-      {/* Share Modal */}
+      {/* Share Modal - Multi-step Claim Prize flow */}
       <AnimatePresence>
         {showShareModal && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+            className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto"
           >
             <motion.div 
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl text-center"
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative"
             >
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-primary mx-auto mb-4">
-                <Share2 size={32} />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Claim Your Prize</h3>
-              <p className="text-sm text-gray-500 mb-6">Click the button below to instantly claim your raffle winnings!</p>
-              
-              <div className="bg-gray-50 p-4 rounded-xl mb-6 text-left border border-gray-100">
-                <p className="text-sm text-gray-700 font-medium">Congratulations! You've won the weekly draw. Your prize of ₦50,000 is ready for collection.</p>
-              </div>
+              <button 
+                onClick={() => setShowShareModal(false)}
+                className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <X size={18} />
+              </button>
 
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setShowShareModal(false)}
-                  className="flex-1 py-3 font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200"
-                >
-                  Later
-                </button>
-                <button 
-                  onClick={handleShare}
-                  className="flex-1 py-3 font-medium text-white bg-primary rounded-xl hover:bg-primary/90 flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 size={18} />
-                  Claim Now
-                </button>
-              </div>
+              {claimStep === 'platform' && (
+                <div>
+                  <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center p-1.5 mb-4 shadow-sm">
+                    <img src={logoImg} alt="berry logo" className="w-9 h-9 object-contain" referrerPolicy="no-referrer" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-1">Claim Your Prize</h3>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Winner Ticket: <span className="font-mono font-bold text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded border">#A10294</span> • Prize: <span className="font-bold text-emerald-600">₦50,000</span>
+                  </p>
+                  
+                  <p className="text-xs text-gray-600 mb-5 leading-relaxed">
+                    To claim your weekly cash raffle prize, please help us spread the word! Share your winning moment on any of the supported social media platforms below to instantly unlock admin payout verification.
+                  </p>
+
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2.5">
+                    Select Social Platform
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    {[
+                      { id: 'facebook', label: 'Facebook', color: 'hover:border-blue-500 hover:bg-blue-50/50', icon: 'Facebook', activeColor: 'border-blue-500 bg-blue-50 text-blue-600' },
+                      { id: 'instagram', label: 'Instagram', color: 'hover:border-pink-500 hover:bg-pink-50/50', icon: 'Instagram', activeColor: 'border-pink-500 bg-pink-50 text-pink-600' },
+                      { id: 'twitter', label: 'X / Twitter', color: 'hover:border-gray-900 hover:bg-gray-50', icon: 'Twitter', activeColor: 'border-gray-900 bg-gray-100 text-gray-900' },
+                      { id: 'linkedin', label: 'LinkedIn', color: 'hover:border-indigo-600 hover:bg-indigo-50/50', icon: 'Linkedin', activeColor: 'border-indigo-600 bg-indigo-50 text-indigo-700' },
+                    ].map(plat => {
+                      const isSelected = selectedPlatform === plat.id;
+                      const IconComponent = (Icons as any)[plat.icon];
+                      return (
+                        <button
+                          key={plat.id}
+                          onClick={() => setSelectedPlatform(plat.id as any)}
+                          className={`flex items-center gap-2.5 p-3 rounded-2xl border text-left text-sm font-medium transition-all ${
+                            isSelected 
+                              ? plat.activeColor + ' ring-2 ring-offset-2 ring-primary/20 scale-[0.98]' 
+                              : 'border-gray-200 text-gray-700 bg-white ' + plat.color
+                          }`}
+                        >
+                          <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-white' : 'bg-gray-50'}`}>
+                            {IconComponent && <IconComponent size={16} />}
+                          </div>
+                          <span>{plat.label}</span>
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      onClick={() => setSelectedPlatform('whatsapp')}
+                      className={`col-span-2 flex items-center gap-3 p-3.5 rounded-2xl border text-left text-sm font-medium transition-all ${
+                        selectedPlatform === 'whatsapp'
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-offset-2 ring-emerald-100'
+                          : 'border-gray-200 text-gray-700 bg-white hover:border-emerald-500 hover:bg-emerald-50/50'
+                      }`}
+                    >
+                      <div className={`p-1.5 rounded-lg ${selectedPlatform === 'whatsapp' ? 'bg-white' : 'bg-gray-50'}`}>
+                        <MessageCircle size={18} className="text-emerald-500" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-xs">WhatsApp Status / Chat</p>
+                        <p className="text-[10px] text-gray-400 font-normal">Perfect for sharing inside groups</p>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => setShowShareModal(false)}
+                      className="flex-1 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-2xl transition-colors"
+                    >
+                      Later
+                    </button>
+                    <button 
+                      disabled={!selectedPlatform}
+                      onClick={handleSelectPlatformNext}
+                      className="flex-1 py-3 text-sm font-semibold text-white bg-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/95 rounded-2xl transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      <span>Generate Post</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {claimStep === 'loading' && (
+                <div className="py-8 flex flex-col items-center justify-center text-center">
+                  <div className="relative mb-6">
+                    <div className="absolute inset-0 bg-primary/10 rounded-full animate-ping scale-150 opacity-40" />
+                    <div className="w-16 h-16 bg-primary/5 rounded-full flex items-center justify-center text-primary relative">
+                      <Loader2 size={32} className="animate-spin" />
+                    </div>
+                  </div>
+                  <h4 className="text-lg font-bold text-gray-900 mb-1">Generating Verification Post</h4>
+                  <p className="text-xs text-gray-500 max-w-[240px] leading-relaxed">
+                    Personalizing reward details and referral integrations using AI keywords...
+                  </p>
+                </div>
+              )}
+
+              {claimStep === 'preview' && (
+                <div>
+                  <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 mb-4">
+                    <CheckCircle2 size={24} />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-1">Copy Your Share Post</h3>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Sharing to <span className="font-bold text-gray-700 capitalize">{selectedPlatform}</span>
+                  </p>
+
+                  <div className="relative mb-4 bg-gray-50 p-3.5 rounded-2xl border border-gray-100 text-left">
+                    <textarea 
+                      readOnly
+                      value={generatedPost}
+                      rows={5}
+                      className="w-full text-xs font-medium text-gray-700 bg-transparent border-0 outline-none resize-none focus:ring-0 leading-relaxed font-sans"
+                    />
+                    <div className="absolute right-2 bottom-2">
+                      <button
+                        onClick={handleCopyText}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 ${
+                          copiedText 
+                            ? 'bg-emerald-500 text-white' 
+                            : 'bg-white text-gray-700 hover:bg-gray-100 border'
+                        }`}
+                      >
+                        {copiedText ? <ClipboardCheck size={14} /> : <Copy size={13} />}
+                        <span>{copiedText ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100/50 text-left mb-6">
+                    <p className="text-[11px] font-medium text-amber-800 leading-relaxed flex items-start gap-1.5">
+                      <AlertCircle size={13} className="shrink-0 mt-0.5 text-amber-600" />
+                      <span>
+                        <strong>Verification Guide:</strong> Click "Copy", open your chosen app, create a new post, paste the generated text, and share it. Once shared, return here and mark as posted.
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => setClaimStep('platform')}
+                      className="py-3 px-4 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-2xl transition-colors"
+                    >
+                      Back
+                    </button>
+                    <button 
+                      disabled={isSubmitting}
+                      onClick={handleMarkAsPosted}
+                      className="flex-1 py-3 text-sm font-bold text-white bg-secondary hover:bg-secondary/95 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-2xl transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          <span>Submitting...</span>
+                        </>
+                      ) : (
+                        <span>Mark as Posted</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {claimStep === 'confirmed' && (
+                <div className="py-4 text-center">
+                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                    <Sparkles size={32} />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-1">Claim Submitted!</h3>
+                  <p className="text-xs text-emerald-600 font-semibold mb-4 bg-emerald-50 w-fit mx-auto px-2.5 py-1 rounded-full border border-emerald-100">
+                    Raffle: Weekly Cash Draw #A10294
+                  </p>
+                  
+                  <p className="text-xs text-gray-600 max-w-[320px] mx-auto leading-relaxed mb-6">
+                    Your social verification claim was submitted! An admin will review the shared post. Upon confirmation (typically within 1-2 hours), your <strong>₦50,000</strong> prize will be paid instantly to your wallet.
+                  </p>
+
+                  <button 
+                    onClick={() => {
+                      setShowShareModal(false);
+                      setClaimStep('platform');
+                    }}
+                    className="w-full py-3.5 font-bold text-white bg-primary hover:bg-primary/95 rounded-2xl transition-colors shadow-sm"
+                  >
+                    Awesome, thanks!
+                  </button>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

@@ -119,6 +119,20 @@ service cloud.firestore {
              data.type in ['survey', 'redemption', 'referral', 'system'];
     }
 
+    function isValidPrizeClaim() {
+      let data = request.resource.data;
+      return hasRequiredFields(['userId', 'displayName', 'ticketNumber', 'rewardTitle', 'rewardId', 'platform', 'postText', 'status', 'claimedAt']) &&
+             data.userId is string &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 100 &&
+             data.ticketNumber is string && data.ticketNumber.size() > 0 && data.ticketNumber.size() <= 50 &&
+             data.rewardTitle is string && data.rewardTitle.size() > 0 && data.rewardTitle.size() <= 100 &&
+             data.rewardId is string && data.rewardId.size() > 0 && data.rewardId.size() <= 50 &&
+             data.platform in ['facebook', 'instagram', 'twitter', 'linkedin', 'whatsapp'] &&
+             data.postText is string && data.postText.size() > 0 && data.postText.size() <= 1000 &&
+             data.status in ['pending', 'verified', 'rejected'] &&
+             data.claimedAt is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -142,6 +156,12 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read, list: if true;
       allow create, update: if isValidNotification();
+    }
+
+    match /claims/{claimId} {
+      allow read, list: if true;
+      allow create: if isValidPrizeClaim();
+      allow update: if isValidPrizeClaim();
     }
   }
 }

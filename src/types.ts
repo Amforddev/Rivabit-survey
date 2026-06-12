@@ -70,6 +70,19 @@ export interface Redemption {
   status: 'pending' | 'completed' | 'failed';
 }
 
+export interface PrizeClaim {
+  id?: string;
+  userId: string;
+  displayName: string;
+  ticketNumber: string;
+  rewardTitle: string;
+  rewardId: string;
+  platform: 'facebook' | 'instagram' | 'twitter' | 'linkedin' | 'whatsapp';
+  postText: string;
+  status: 'pending' | 'verified' | 'rejected';
+  claimedAt: any;
+}
+
 export interface AppNotification {
   id?: string;
   userId: string;
