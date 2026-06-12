@@ -239,7 +239,7 @@ export default function App() {
 
   const tutorialSteps = [
     {
-      title: "Welcome to berry! 🍓",
+      title: "Welcome to berry!",
       content: "Let's take a quick tour to help you get started.",
       placement: "center"
     },
@@ -473,6 +473,9 @@ export default function App() {
                       startSurvey={startSurvey} 
                       completedSurveys={completedSurveyIds}
                       setView={setView}
+                      submissions={submissions}
+                      redemptions={redemptions}
+                      claims={claims}
                     />
                   )}
                   {view === 'surveys' && (

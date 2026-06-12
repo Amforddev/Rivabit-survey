@@ -38,7 +38,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
       // 3. Create success notification for user
       await addDoc(collection(db, 'notifications'), {
         userId: claim.userId,
-        title: 'Weekly Raffle Approved! 🎉',
+        title: 'Weekly Raffle Approved!',
         message: `Your share post for ticket #A10294 has been verified! ₦50,000 has been added to your Wallet balance.`,
         read: false,
         createdAt: serverTimestamp(),
@@ -63,7 +63,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ userProfile, redemptions, sub
       // 2. Create notification for user
       await addDoc(collection(db, 'notifications'), {
         userId: claim.userId,
-        title: 'Weekly Raffle Rejected ⚠️',
+        title: 'Weekly Raffle Rejected',
         message: `We were unable to verify your shared post. Please resubmit your claim on the Rewards page.`,
         read: false,
         createdAt: serverTimestamp(),
