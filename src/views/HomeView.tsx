@@ -31,7 +31,7 @@ const HomeView: React.FC<HomeViewProps> = ({
   const availableSurveys = MOCK_SURVEYS.filter(s => !completedSurveys.includes(s.id));
   const [selectedSurvey, setSelectedSurvey] = useState<Survey | null>(null);
 
-  // Combine real database records and simulated real-time events for dynamic activity feed
+  // Combine real database records and simulated events for a realistic, user-centric activity feed
   const activityFeed = React.useMemo(() => {
     const list: any[] = [];
 
@@ -70,14 +70,14 @@ const HomeView: React.FC<HomeViewProps> = ({
       });
     }
 
-    // 3. Claims (Real)
+    // 3. Claims (Real) - filtered to only the user's claims for realistic feed
     if (claims && claims.length > 0) {
-      claims.forEach(claim => {
-        const isSelf = claim.userId === userProfile.uid;
+      const userClaims = claims.filter(claim => claim.userId === userProfile.uid);
+      userClaims.forEach(claim => {
         list.push({
           id: `claim-${claim.id || Math.random()}`,
-          name: isSelf ? 'Your Claim Request' : `${claim.displayName || 'A participant'}`,
-          detail: `Claimed prize for ${claim.rewardTitle}`,
+          name: 'You Claimed Reward',
+          detail: `Prize for ${claim.rewardTitle}`,
           amountText: claim.status === 'verified' ? 'Verified' : claim.status === 'rejected' ? 'Rejected' : 'Pending',
           statusType: claim.status || 'pending',
           amountType: 'status',
@@ -98,90 +98,93 @@ const HomeView: React.FC<HomeViewProps> = ({
       return new Date(t).getTime();
     };
 
-    // Simulated/Real-looking dynamic events to make the feed professional and cover 'all activities on the platform'
-    // Stably mapped in time offsets
-    const sims = [
+    // Baseline historical registration milestone tailored to profile's establishment
+    let regTime = Date.now() - 2 * 24 * 60 * 60 * 1000; // 2 days ago fallback
+    if (userProfile.createdAt) {
+      regTime = getMs(userProfile.createdAt);
+    }
+
+    const baseline: any[] = [
       {
-        id: 'sim-1',
-        name: 'Chinedu A.',
+        id: 'sim-registered',
+        name: 'Account Registered',
+        detail: 'Welcome to berry!',
+        amountText: 'Registered',
+        statusType: 'registered',
+        amountType: 'status',
+        timestamp: new Date(regTime),
+        icon: 'UserPlus',
+        iconBg: 'bg-teal-50 text-teal-600 border-teal-100',
+      }
+    ];
+
+    if (userProfile.profileCompleted) {
+      baseline.push({
+        id: 'sim-profile',
+        name: 'You Completed Survey',
+        detail: 'Onboarding & Profile Setup',
+        amountText: '+50',
+        hasBerry: true,
+        amountType: 'positive',
+        timestamp: new Date(regTime + 5 * 60 * 1000), // 5 minutes after registration
+        icon: 'ClipboardCheck',
+        iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+      });
+    }
+
+    // Combine both arrays
+    const combined = [...list, ...baseline];
+
+    // Pad with other realistic historical activities for "You" if the user's dynamic feed is short (< 5 items)
+    const extraSims = [
+      {
+        id: 'sim-extra-1',
+        name: 'You Completed Survey',
         detail: 'Completed Tech Habits survey',
         amountText: '+150',
         hasBerry: true,
         amountType: 'positive',
-        timeOffset: 6 * 60 * 1000, // 6 minutes ago
+        timestamp: new Date(regTime + 30 * 60 * 1000), // 30 minutes after registration
         icon: 'ClipboardCheck',
         iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-100',
       },
       {
-        id: 'sim-2',
-        name: 'Chioma O.',
-        detail: 'Redeemed Monthly Draw Ticket',
-        amountText: '-400',
+        id: 'sim-extra-2',
+        name: 'You Redeemed Reward',
+        detail: 'Redeemed Weekly Draw Ticket',
+        amountText: '-50',
         hasBerry: true,
         amountType: 'negative',
-        timeOffset: 15 * 60 * 1000,
+        timestamp: new Date(regTime + 60 * 60 * 1000), // 1 hour after registration
         icon: 'Ticket',
         iconBg: 'bg-indigo-50 text-indigo-600 border-indigo-100',
       },
       {
-        id: 'sim-3',
-        name: 'Abubakar M.',
+        id: 'sim-extra-3',
+        name: 'You Completed Survey',
         detail: 'Completed Consumer Preferences survey',
         amountText: '+200',
         hasBerry: true,
         amountType: 'positive',
-        timeOffset: 34 * 60 * 1000,
-        icon: 'ClipboardCheck',
-        iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-      },
-      {
-        id: 'sim-4',
-        name: 'Tunde K.',
-        detail: 'Claimed ₦50,000 Weekly Prize',
-        amountText: 'Verified',
-        statusType: 'verified',
-        amountType: 'status',
-        timeOffset: 52 * 60 * 1000,
-        icon: 'Award',
-        iconBg: 'bg-amber-50 text-amber-600 border-amber-100',
-      },
-      {
-        id: 'sim-5',
-        name: 'Stella U.',
-        detail: 'Joined via invite referral link',
-        amountText: 'Registered',
-        statusType: 'registered',
-        amountType: 'status',
-        timeOffset: 85 * 60 * 1000,
-        icon: 'UserPlus',
-        iconBg: 'bg-teal-50 text-teal-600 border-teal-100',
-      },
-      {
-        id: 'sim-6',
-        name: 'Blessing E.',
-        detail: 'Completed Daily Commute survey',
-        amountText: '+100',
-        hasBerry: true,
-        amountType: 'positive',
-        timeOffset: 110 * 60 * 1000,
+        timestamp: new Date(regTime + 90 * 60 * 1000), // 1.5 hours after registration
         icon: 'ClipboardCheck',
         iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-100',
       }
     ];
 
-    const processedSims = sims.map(sim => ({
-      ...sim,
-      timestamp: new Date(Date.now() - sim.timeOffset)
-    }));
+    extraSims.forEach(sim => {
+      // Avoid raw duplicates with actual DB entries
+      const alreadyExists = list.some(item => item.detail.toLowerCase() === sim.detail.toLowerCase());
+      if (!alreadyExists && combined.length < 5) {
+        combined.push(sim);
+      }
+    });
 
-    // Combine both arrays
-    const combined = [...list, ...processedSims];
-    
     // Sort overall descending
     combined.sort((a, b) => getMs(b.timestamp) - getMs(a.timestamp));
 
     return combined.slice(0, 7); // Top 7 events
-  }, [submissions, redemptions, claims, userProfile.uid]);
+  }, [submissions, redemptions, claims, userProfile.uid, userProfile.profileCompleted, userProfile.createdAt]);
 
   const formatActivityTime = (timestamp: any) => {
     if (!timestamp) return 'Just now';
@@ -261,88 +264,13 @@ const HomeView: React.FC<HomeViewProps> = ({
         )}
       </section>
 
-      {/* Quick Rewards - Active Raffle Draws Preview */}
-      <section>
-        <div className="flex justify-between items-end mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Active Raffle Draws</h3>
-          <button 
-            onClick={() => setView('rewards')}
-            className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-          >
-            <span>View All Rewards</span>
-            <Icons.ChevronRight size={14} />
-          </button>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {REWARD_CATEGORIES.find(c => c.id === 'raffle')?.options.map(option => {
-            const isWeekly = option.id === 'r1';
-            const isMonthly = option.id === 'r2';
-            
-            const textColor = isWeekly ? 'text-[#3F3E8F]' : isMonthly ? 'text-amber-600' : 'text-emerald-600';
-            const iconBg = isWeekly ? 'bg-[#3F3E8F]/10' : isMonthly ? 'bg-amber-50' : 'bg-emerald-50';
-            
-            return (
-              <motion.div 
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                key={option.id} 
-                onClick={() => setView('rewards')}
-                className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100/80 hover:border-gray-200 cursor-pointer flex flex-col justify-between transition-all gap-4 text-left relative overflow-hidden group"
-              >
-                {/* Decorative background element */}
-                <div className="absolute right-0 top-0 opacity-[0.03] text-gray-900 pointer-events-none group-hover:scale-110 transition-transform">
-                  <Icons.Ticket size={120} className="-mr-4 -mt-4 rotate-12" />
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-start mb-3">
-                    <div className={`w-10 h-10 rounded-2xl ${iconBg} ${textColor} flex items-center justify-center shrink-0`}>
-                      <Icons.Ticket size={20} />
-                    </div>
-                    {option.status && (
-                      <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
-                        option.status === 'Open' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
-                      }`}>
-                        {option.status}
-                      </span>
-                    )}
-                  </div>
-
-                  <h4 className="font-bold text-gray-900 text-sm leading-tight mb-1 group-hover:text-primary transition-colors pr-2">
-                    {option.title}
-                  </h4>
-                  <p className="text-[11px] text-gray-500 font-medium leading-normal">
-                    {option.description}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-gray-100/50 pt-3 mt-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Entry:</span>
-                    <div className="flex items-center gap-1 bg-primary/5 text-primary text-xs font-black px-2 py-0.5 rounded-full border border-primary/10">
-                      <Coins size={11} className="fill-primary/20" />
-                      <span>{option.cost}</span>
-                    </div>
-                  </div>
-                  <div className="w-7 h-7 bg-gray-50 group-hover:bg-primary group-hover:text-white rounded-full flex items-center justify-center text-gray-400 transition-colors shadow-sm">
-                    <Icons.ArrowRight size={12} strokeWidth={2.5} />
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
-
       {/* Platform Recent Activity Stream */}
       <section className="bg-white p-6 rounded-[2rem] border border-gray-100/90 shadow-sm text-left">
         <div className="flex justify-between items-center mb-5">
           <div className="flex items-center gap-2">
             <Icons.Zap size={18} className="text-[#FF8D03] shrink-0 fill-[#FF8D03]/10" />
-            <h3 className="text-lg font-bold text-gray-900 tracking-tight">Recent Platform Activity</h3>
+            <h3 className="text-lg font-bold text-gray-900 tracking-tight">Recent Activity</h3>
           </div>
-          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider border border-emerald-100">Live Feed</span>
         </div>
 
         <div className="space-y-4">
