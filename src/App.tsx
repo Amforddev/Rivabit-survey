@@ -244,8 +244,8 @@ export default function App() {
       placement: "center"
     },
     {
-      title: "Answer & Earn",
-      content: "Take surveys and complete profiling to earn berries.",
+      title: "Activities",
+      content: "Complete surveys and watch ads to earn berries.",
       placement: "nav-answer"
     },
     {
@@ -539,7 +539,7 @@ export default function App() {
               <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] px-2 py-1.5 flex justify-between items-center z-20 rounded-[2rem] border border-gray-50">
                 <div className="flex flex-1 justify-around items-center">
                   <NavItem icon={Home} label="Home" isActive={view === 'home'} onClick={() => setView('home')} />
-                  <NavItem icon={ClipboardList} label="Answer" isActive={view === 'surveys'} onClick={() => setView('surveys')} />
+                  <NavItem icon={ClipboardList} label="Activities" isActive={view === 'surveys'} onClick={() => setView('surveys')} />
                 </div>
                 
                 <ProminentNavItem isActive={view === 'rewards'} onClick={() => setView('rewards')} />
@@ -654,7 +654,7 @@ function NavItem({ icon: Icon, label, isActive, onClick, badge }: { icon: React.
         transition={{ type: "spring", stiffness: 400, damping: 15 }}
         className="relative"
       >
-        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} fill={isActive ? "currentColor" : "none"} className={isActive ? "drop-shadow-[0_2px_4px_rgba(90,75,255,0.3)]" : ""} />
+        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} className={isActive ? "drop-shadow-[0_2px_4px_rgba(90,75,255,0.3)]" : ""} />
         {badge && (
           <div className="absolute -top-1 -right-2 bg-[#E15A5A] text-white text-[8px] font-bold px-1.5 rounded-md min-w-[16px] h-[14px] flex items-center justify-center border border-white">
             {badge}

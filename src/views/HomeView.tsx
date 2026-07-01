@@ -38,17 +38,18 @@ const HomeView: React.FC<HomeViewProps> = ({
     // 1. Survey Submissions (Real)
     if (submissions && submissions.length > 0) {
       submissions.forEach(sub => {
+        const isAd = sub.surveyId?.startsWith('ad_');
         const survey = MOCK_SURVEYS.find(s => s.id === sub.surveyId);
         list.push({
           id: `sub-${sub.id || Math.random()}`,
-          name: 'You Completed Survey',
-          detail: survey?.title || 'System Survey',
+          name: isAd ? 'You Watched an Ad' : 'You Completed Survey',
+          detail: isAd ? 'Sponsored Video Ad' : (survey?.title || 'System Survey'),
           amountText: `+${sub.berryEarned}`,
           hasBerry: true,
           amountType: 'positive',
           timestamp: sub.submittedAt,
-          icon: 'ClipboardCheck',
-          iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+          icon: isAd ? 'PlayCircle' : 'ClipboardCheck',
+          iconBg: isAd ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100',
         });
       });
     }
@@ -230,7 +231,7 @@ const HomeView: React.FC<HomeViewProps> = ({
           onClick={() => setView('surveys')}
           className="bg-gradient-to-r from-accent via-secondary to-accent animate-gradient bg-size-200 text-white px-6 py-3 rounded-full font-semibold text-sm shadow-sm hover:opacity-90 transition-all flex items-center gap-2 group"
         >
-          <span>Answer Now</span>
+          <span>Start Earning</span>
           <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center text-primary group-hover:translate-x-0.5 transition-transform">
             <Icons.ArrowRight size={14} />
           </div>

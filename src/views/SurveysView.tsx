@@ -1,8 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle2, ClipboardList, Coins, Clock, Lock, X } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Coins, Clock, Lock, X, PlayCircle, ChevronLeft } from 'lucide-react';
 import { Survey, UserProfile } from '../types';
 import { MOCK_SURVEYS } from '../data';
+import { db } from '../firebase';
+import { updateDoc, doc, increment, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 interface SurveysViewProps {
   userProfile: UserProfile;
@@ -12,6 +14,8 @@ interface SurveysViewProps {
 }
 
 const SurveysView: React.FC<SurveysViewProps> = ({ userProfile, completedSurveys, startSurvey, setView }) => {
+  const [showActivities, setShowActivities] = useState<boolean>(true);
+  const [showAds, setShowAds] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedSurvey, setSelectedSurvey] = useState<Survey | null>(null);
 
@@ -23,6 +27,60 @@ const SurveysView: React.FC<SurveysViewProps> = ({ userProfile, completedSurveys
   const availableSurveys = MOCK_SURVEYS.filter(s => !completedSurveys.includes(s.id) && (selectedCategory === 'All' || s.category === selectedCategory));
   const doneSurveys = MOCK_SURVEYS.filter(s => completedSurveys.includes(s.id) && (selectedCategory === 'All' || s.category === selectedCategory));
 
+  if (showAds) {
+    return <AdPlayer userProfile={userProfile} onClose={() => setShowAds(false)} />;
+  }
+
+  if (showActivities) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        className="p-6 space-y-6"
+      >
+        <div className="flex flex-col mb-4">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">Activities</h2>
+          <p className="text-sm text-gray-500 font-medium">Choose how you want to earn berries</p>
+        </div>
+
+        <div className="space-y-4">
+          {/* Surveys Option */}
+          <motion.div 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowActivities(false)}
+            className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 cursor-pointer flex items-center gap-4 hover:border-primary/20 transition-all relative overflow-hidden group"
+          >
+            <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shrink-0 group-hover:scale-110 transition-transform">
+              <ClipboardList size={28} />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-gray-900 text-lg mb-0.5">Surveys</h3>
+              <p className="text-xs text-gray-500 font-medium">Share your opinions and earn berries</p>
+            </div>
+          </motion.div>
+
+          {/* Watch Ads Option */}
+          <motion.div 
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowAds(true)}
+            className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 cursor-pointer flex items-center gap-4 hover:border-indigo-500/20 transition-all relative overflow-hidden group"
+          >
+            <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shrink-0 group-hover:scale-110 transition-transform">
+              <PlayCircle size={28} />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-bold text-gray-900 text-lg mb-0.5">Watch Ads</h3>
+              <p className="text-xs text-gray-500 font-medium">Watch short videos for quick rewards</p>
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0, x: -20 }}
@@ -30,7 +88,13 @@ const SurveysView: React.FC<SurveysViewProps> = ({ userProfile, completedSurveys
       exit={{ opacity: 0, x: 20 }}
       className="p-6 space-y-6"
     >
-      <div className="flex justify-between items-center">
+      <div className="flex items-center gap-3">
+        <button 
+          onClick={() => setShowActivities(true)}
+          className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-gray-600 border border-gray-100 hover:bg-gray-50"
+        >
+          <ChevronLeft size={24} />
+        </button>
         <h2 className="text-2xl font-semibold text-gray-900">Available Surveys</h2>
       </div>
 
@@ -183,6 +247,104 @@ const SurveyCard: React.FC<{ survey: Survey, onClick: () => void }> = ({ survey,
       <div className="flex items-center gap-1 text-primary font-semibold text-sm shrink-0 bg-gray-100 px-3 py-1.5 rounded-full">
         <Coins size={14} />
         {survey.berry}
+      </div>
+    </motion.div>
+  );
+}
+
+const AdPlayer: React.FC<{ userProfile: UserProfile, onClose: () => void }> = ({ userProfile, onClose }) => {
+  const [progress, setProgress] = useState(0);
+  const [earned, setEarned] = useState(false);
+  const duration = 15; // 15 seconds ad
+  
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (progress < duration && !earned) {
+      timer = setTimeout(() => {
+        setProgress(p => p + 1);
+      }, 1000);
+    } else if (progress >= duration && !earned) {
+      // Ad finished, reward user
+      const reward = async () => {
+        try {
+          // Add 10 berries per ad watched
+          await updateDoc(doc(db, 'users', userProfile.uid), {
+            berry: increment(10)
+          });
+          
+          // Using a submission to show in feed
+          await addDoc(collection(db, 'surveySubmissions'), {
+            userId: userProfile.uid,
+            surveyId: `ad_${Date.now()}`,
+            answers: {},
+            berryEarned: 10,
+            submittedAt: serverTimestamp()
+          });
+          
+          setEarned(true);
+        } catch (e) {
+          console.error("Error rewarding ad points", e);
+        }
+      };
+      reward();
+    }
+    return () => clearTimeout(timer);
+  }, [progress, earned, userProfile.uid]);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      className="p-6 h-full flex flex-col justify-center bg-black/5 rounded-3xl"
+    >
+      <div className="bg-black rounded-3xl overflow-hidden shadow-2xl relative aspect-[9/16] w-full max-w-sm mx-auto flex flex-col justify-between">
+        <div className="p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
+          <span className="text-white text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-1 rounded backdrop-blur-sm">Sponsored Ad</span>
+          {earned ? (
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors pointer-events-auto z-20 relative">
+              <X size={16} />
+            </button>
+          ) : (
+            <span className="text-white font-mono text-sm shadow-sm">{duration - progress}s</span>
+          )}
+        </div>
+        
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {!earned ? (
+            <div className="text-center p-6 text-white/80 animate-pulse flex flex-col items-center">
+              <PlayCircle size={64} className="mb-4 text-white/50" />
+              <p className="font-bold text-lg">Loading Video...</p>
+            </div>
+          ) : (
+            <motion.div 
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="text-center p-6 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 pointer-events-auto z-20 relative"
+            >
+              <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white mx-auto mb-4">
+                <CheckCircle2 size={32} />
+              </div>
+              <h3 className="text-2xl font-black text-white mb-2">Reward Earned!</h3>
+              <p className="text-white/80 mb-6 font-medium text-sm">You earned 10 berries</p>
+              <button 
+                onClick={onClose}
+                className="bg-white text-black px-6 py-3 rounded-full font-bold w-full hover:bg-gray-100 transition-colors"
+              >
+                Close Ad
+              </button>
+            </motion.div>
+          )}
+        </div>
+        
+        {!earned && (
+          <div className="h-1 bg-white/20 w-full mt-auto">
+            <div 
+              className="h-full bg-primary transition-all duration-1000 ease-linear" 
+              style={{ width: `${(progress / duration) * 100}%` }}
+            />
+          </div>
+        )}
       </div>
     </motion.div>
   );
