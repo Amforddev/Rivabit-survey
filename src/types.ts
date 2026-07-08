@@ -1,4 +1,4 @@
-export type View = 'landing' | 'onboarding' | 'profile-builder' | 'home' | 'surveys' | 'survey_active' | 'rewards' | 'profile' | 'wallet';
+export type View = 'landing' | 'onboarding' | 'profile-builder' | 'home' | 'surveys' | 'survey_active' | 'rewards' | 'profile' | 'wallet' | 'gamification_hub';
 
 export interface Survey {
   id: string;
@@ -7,6 +7,7 @@ export interface Survey {
   time: string;
   category: string;
   questions: Question[];
+  rewardsNectar?: boolean;
 }
 
 export interface Question {
@@ -38,6 +39,9 @@ export interface UserProfile {
   lastName?: string;
   phoneNumber?: string;
   kycVerified?: boolean;
+  nectar?: number;
+  sunshineStreak?: number;
+  isFading?: boolean;
   profileCompleted?: boolean;
   profileData?: Record<string, string>;
   photoURL?: string;

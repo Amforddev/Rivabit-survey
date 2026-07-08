@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, ClipboardList, Coins, Clock, Lock, X, PlayCircle, ChevronLeft } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { Survey, UserProfile } from '../types';
 import { MOCK_SURVEYS } from '../data';
 import { db } from '../firebase';
@@ -74,6 +75,11 @@ const SurveysView: React.FC<SurveysViewProps> = ({ userProfile, completedSurveys
             <div className="flex-1">
               <h3 className="font-bold text-gray-900 text-lg mb-0.5">Watch Ads</h3>
               <p className="text-xs text-gray-500 font-medium">Watch short videos for quick rewards</p>
+              <div className="mt-2 flex">
+                <span className="text-[10px] font-bold uppercase text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 flex items-center gap-1 w-max">
+                  <Icons.Droplets size={10} fill="currentColor" className="text-amber-500" /> Rewards Nectar
+                </span>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -238,15 +244,25 @@ const SurveyCard: React.FC<{ survey: Survey, onClick: () => void }> = ({ survey,
         <div className="flex justify-between items-start mb-1">
           <h4 className="font-medium text-gray-900 text-base truncate pr-2">{survey.title}</h4>
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
           <span className="flex items-center gap-1"><Clock size={12} /> {survey.time}</span>
           <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
           <span>{survey.category}</span>
+          {survey.rewardsNectar && (
+            <>
+              <span className="w-1 h-1 bg-gray-300 rounded-full hidden sm:block"></span>
+              <span className="text-[10px] font-bold uppercase text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 flex items-center gap-1">
+                <Icons.Droplets size={10} fill="currentColor" className="text-amber-500" /> Nectar
+              </span>
+            </>
+          )}
         </div>
       </div>
-      <div className="flex items-center gap-1 text-primary font-semibold text-sm shrink-0 bg-gray-100 px-3 py-1.5 rounded-full">
-        <Coins size={14} />
-        {survey.berry}
+      <div className="flex flex-col items-end gap-1">
+        <div className="flex items-center gap-1 text-primary font-semibold text-sm shrink-0 bg-gray-100 px-3 py-1.5 rounded-full">
+          <Coins size={14} />
+          {survey.berry}
+        </div>
       </div>
     </motion.div>
   );

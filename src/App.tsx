@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Home, ClipboardList, User, Coins, Wifi, CheckCircle2, Wallet, Layers, CreditCard, MessageSquare, ArrowDown, AlertCircle } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { doc, onSnapshot, collection, query, where, addDoc, serverTimestamp, updateDoc, increment, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { db, auth, handleFirestoreError, OperationType } from './firebase';
@@ -14,6 +15,7 @@ import ProfileView from './views/ProfileView';
 import { OnboardingView } from './views/OnboardingView';
 import { ProfileBuilderView } from './views/ProfileBuilderView';
 import { WalletView } from './views/WalletView';
+import { GamificationHubView } from './views/GamificationHubView';
 import { SplashScreen } from './components/SplashScreen';
 import logoImg from './assets/logo.png';
 import rewardsImg from './assets/rewards.png';
@@ -421,6 +423,18 @@ export default function App() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {activeProfile.sunshineStreak !== undefined && activeProfile.sunshineStreak > 0 && (
+                    <motion.div 
+                      whileHover={{ scale: 1.05 }}
+                      className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1.5 rounded-full border border-amber-100 shadow-sm cursor-help"
+                      title={`${activeProfile.sunshineStreak} Day Streak!`}
+                    >
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }}>
+                        <Icons.Sun size={14} className="fill-amber-400 text-amber-500" />
+                      </motion.div>
+                      <span className="text-[10px] font-bold">{activeProfile.sunshineStreak} Day</span>
+                    </motion.div>
+                  )}
                   <motion.div 
                     key={activeProfile.berry}
                     initial={{ scale: 1.1 }}
@@ -494,6 +508,13 @@ export default function App() {
                       setUserProfile={setUserProfile as any}
                     />
                   )}
+                  {view === 'gamification_hub' && (
+                    <GamificationHubView 
+                      key="gamification_hub" 
+                      userProfile={activeProfile}
+                      setView={setView}
+                    />
+                  )}
                   {view === 'survey_active' && activeSurvey && (
                     <ActiveSurveyView 
                       key="survey_active" 
@@ -534,8 +555,8 @@ export default function App() {
               </motion.div>
             </main>
 
-            {/* Nav Bar only visible when not in onboarding/survey */}
-            {view !== 'onboarding' && view !== 'survey_active' && (
+            {/* Nav Bar only visible when not in onboarding/survey/gamification_hub */}
+            {view !== 'onboarding' && view !== 'survey_active' && view !== 'gamification_hub' && (
               <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] px-2 py-1.5 flex justify-between items-center z-20 rounded-[2rem] border border-gray-50">
                 <div className="flex flex-1 justify-around items-center">
                   <NavItem icon={Home} label="Home" isActive={view === 'home'} onClick={() => setView('home')} />

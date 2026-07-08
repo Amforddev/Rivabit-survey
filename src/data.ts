@@ -7,6 +7,7 @@ export const MOCK_SURVEYS: Survey[] = [
     berry: 150,
     time: '3 min',
     category: 'Technology',
+    rewardsNectar: true,
     questions: [
       { id: 'q1', text: 'Which device do you use most often?', options: ['Smartphone', 'Laptop', 'Tablet', 'Smartwatch'] },
       { id: 'q2', text: 'How many hours a day do you spend on social media?', options: ['Less than 1', '1-3 hours', '3-5 hours', '5+ hours'] },
@@ -19,6 +20,7 @@ export const MOCK_SURVEYS: Survey[] = [
     berry: 200,
     time: '5 min',
     category: 'Shopping',
+    rewardsNectar: true,
     questions: [
       { id: 'q1', text: 'Where do you prefer to shop?', options: ['Online', 'In-store', 'Both equally'] },
       { id: 'q2', text: 'What influences your buying decision the most?', options: ['Price', 'Brand reputation', 'Reviews', 'Eco-friendliness'] }
@@ -40,6 +42,7 @@ export const MOCK_SURVEYS: Survey[] = [
     berry: 250,
     time: '4 min',
     category: 'Health',
+    rewardsNectar: true,
     questions: [
       { id: 'q1', text: 'How often do you exercise?', options: ['Daily', '3-4 times a week', '1-2 times a week', 'Rarely'] },
       { id: 'q2', text: 'Do you track your calories?', options: ['Yes, strictly', 'Sometimes', 'No'] }
