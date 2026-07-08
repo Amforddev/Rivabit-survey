@@ -446,17 +446,17 @@ const HomeView: React.FC<HomeViewProps> = ({
       {/* Hero Card */}
       <div className="bg-gradient-to-br from-primary via-accent to-primary animate-gradient bg-size-200 rounded-3xl p-5 text-white shadow-md relative overflow-hidden flex items-center justify-between">
         <div>
-          <h2 className="font-medium text-sm mb-0.5 text-white/80">Welcome back, {userProfile.displayName?.split(' ')[0] || 'User'}!</h2>
+          <h2 className="font-medium text-sm mb-0.5 text-white/80">Your Balance</h2>
           <div className="text-xl font-bold flex items-center gap-1.5 leading-tight">
-            <Icons.Zap className="text-white fill-white opacity-80" size={20} />
-            Ready to earn?
+            <Icons.Droplets className="text-white fill-white opacity-80" size={20} />
+            {userProfile.nectar || 0} Nectar
           </div>
         </div>
         <button 
           onClick={() => setView('surveys')}
           className="bg-white text-primary px-5 py-2.5 rounded-full font-bold text-sm shadow-sm hover:opacity-90 transition-all flex items-center gap-2 group shrink-0"
         >
-          <span>Start Earning</span>
+          <span>Earn More</span>
           <Icons.ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
         </button>
       </div>

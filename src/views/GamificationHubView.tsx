@@ -51,19 +51,19 @@ export const GamificationHubView: React.FC<GamificationHubViewProps> = ({ userPr
         </div>
         
         {/* Sunshine Streak Summary in Header */}
-        <div className="flex items-center justify-center gap-2 bg-amber-50 rounded-2xl p-3 border border-amber-100 shadow-sm relative overflow-hidden">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-            className="absolute -right-4 -top-4 opacity-20"
-          >
-            <Icons.Sun size={80} className="fill-amber-400 text-amber-500" />
-          </motion.div>
-          <div className="flex items-center justify-center gap-2 z-10">
-            <Icons.Sun size={24} className="fill-amber-400 text-amber-500" />
-            <div>
-              <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-0.5">Sunshine Streak</p>
-              <h2 className="text-xl font-black text-amber-700 leading-none">{userProfile.sunshineStreak || 0} Days</h2>
+        <div className="flex justify-center -mt-2">
+          <div className="inline-flex items-center gap-1.5 bg-amber-50 rounded-full px-3 py-1.5 border border-amber-100 shadow-sm relative overflow-hidden">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+              className="absolute -right-2 -top-2 opacity-20"
+            >
+              <Icons.Sun size={32} className="fill-amber-400 text-amber-500" />
+            </motion.div>
+            <div className="flex items-center gap-1.5 z-10">
+              <Icons.Sun size={14} className="fill-amber-400 text-amber-500" />
+              <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Sunshine Streak:</span>
+              <span className="text-[11px] font-black text-amber-700">{userProfile.sunshineStreak || 0} Days</span>
             </div>
           </div>
         </div>
